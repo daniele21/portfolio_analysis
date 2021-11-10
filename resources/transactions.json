@@ -1,0 +1,252 @@
+[
+  {
+    "date": "2021-04-23",
+    "ticker_id": null,
+    "action": "deposit",
+    "quantity": 0,
+    "price": 0,
+    "commission": 0,
+    "gain": null,
+    "deposit": 500.00
+  },
+  {
+    "date": "2021-04-23",
+    "ticker_id": "ECAR.MI",
+    "action": "buy",
+    "quantity": 19,
+    "price": 6.391,
+    "commission": 2.04,
+    "gain": null,
+    "deposit": null
+  },
+  {
+    "date": "2021-04-23",
+    "ticker_id": "AIAI.MI",
+    "action": "buy",
+    "quantity": 5,
+    "price": 14.974,
+    "commission": 2.02,
+    "gain": null,
+    "deposit": null
+  },
+  {
+    "date": "2021-04-23",
+    "ticker_id": "BATT.MI",
+    "action": "buy",
+    "quantity": 8,
+    "price": 14.948,
+    "commission": 0.0,
+    "gain": null,
+    "deposit": null
+  },
+  {
+    "date": "2021-04-23",
+    "ticker_id": "USPY.DE",
+    "action": "buy",
+    "quantity": 6,
+    "price": 20.05,
+    "commission": 2.04,
+    "gain": null,
+    "deposit": null
+  },
+  {
+    "date": "2021-04-23",
+    "ticker_id": "TIT.MI",
+    "action": "buy",
+    "quantity": 100,
+    "price": 0.44,
+    "commission": 0.56,
+    "gain": null,
+    "deposit": null
+  },
+  {
+    "date": "2021-07-02",
+    "ticker_id": null,
+    "action": "deposit",
+    "quantity": 0,
+    "price": 0,
+    "commission": 0,
+    "gain": null,
+    "deposit": 1000.00
+  },
+  {
+    "date": "2021-07-08",
+    "ticker_id": "2B77.DE",
+    "action": "buy",
+    "quantity": 34,
+    "price": 6.599,
+    "commission": 2.07,
+    "gain": null,
+    "deposit": null
+  },
+  {
+    "date": "2021-07-08",
+    "ticker_id": "ECAR.MI",
+    "action": "buy",
+    "quantity": 17,
+    "price": 6.646,
+    "commission": 2.03,
+    "gain": null,
+    "deposit": null
+  },
+  {
+    "date": "2021-07-08",
+    "ticker_id": "AIAI.MI",
+    "action": "buy",
+    "quantity": 6,
+    "price": 15.644,
+    "commission": 2.03,
+    "gain": null,
+    "deposit": null
+  },
+  {
+    "date": "2021-07-08",
+    "ticker_id": "BATT.MI",
+    "action": "buy",
+    "quantity": 7,
+    "price": 15.2,
+    "commission": 0.00,
+    "gain": null,
+    "deposit": null
+  },
+  {
+    "date": "2021-07-08",
+    "ticker_id": "USPY.DE",
+    "action": "buy",
+    "quantity": 5,
+    "price": 21.765,
+    "commission": 2.03,
+    "gain": null,
+    "deposit": null
+  },
+  {
+    "date": "2021-07-08",
+    "ticker_id": "WHEA.AS",
+    "action": "buy",
+    "quantity": 5,
+    "price": 46.895,
+    "commission": 0.0,
+    "gain": null,
+    "deposit": null
+  },
+  {
+    "date": "2021-09-03",
+    "ticker_id": null,
+    "action": "deposit",
+    "quantity": null,
+    "price": null,
+    "commission": null,
+    "gain": null,
+    "deposit": 1000.00
+  },
+  {
+    "date": "2021-09-06",
+    "ticker_id": "QDVE.DE",
+    "action": "buy",
+    "quantity": 12,
+    "price": 16.932,
+    "commission": 2.07,
+    "gain": null,
+    "deposit": null
+  },
+  {
+    "date": "2021-09-06",
+    "ticker_id": "WTEC.MI",
+    "action": "buy",
+    "quantity": 2,
+    "price": 101.55,
+    "commission": 2.06,
+    "gain": null,
+    "deposit": null
+  },
+  {
+    "date": "2021-09-06",
+    "ticker_id": "TL0.DE",
+    "action": "buy",
+    "quantity": 1,
+    "price": 623.4,
+    "commission": 4.31,
+    "gain": null,
+    "deposit": null
+  },
+  {
+    "date": "2021-09-20",
+    "ticker_id": "WTEC.MI",
+    "action": "sell",
+    "quantity": 2,
+    "price": 99.14,
+    "commission": 2.06,
+    "gain": 196.22,
+    "deposit": null
+  },
+  {
+    "date": "2021-09-20",
+    "ticker_id": "VOLT.MI",
+    "action": "buy",
+    "quantity": 5,
+    "price": 43.62,
+    "commission": 0.0,
+    "gain": null,
+    "deposit": null
+  },
+  {
+    "date": "2021-09-20",
+    "ticker_id": "YODA.MI",
+    "action": "buy",
+    "quantity": 6,
+    "price": 6.671,
+    "commission": 2.01,
+    "gain": null,
+    "deposit": null
+  },
+  {
+    "date": "2021-10-08",
+    "ticker_id": null,
+    "action": "deposit",
+    "quantity": null,
+    "price": null,
+    "commission": null,
+    "gain": null,
+    "deposit": 1000.00
+  },
+  {
+    "date": "2021-10-11",
+    "ticker_id": "SWDA.MI",
+    "action": "buy",
+    "quantity": 4,
+    "price": 72.54,
+    "commission": 2.09,
+    "gain": null,
+    "deposit": null
+  },
+  {
+    "date": "2021-10-11",
+    "ticker_id": "IWVL.MI",
+    "action": "buy",
+    "quantity": 8,
+    "price": 31.78,
+    "commission": 2.08,
+    "gain": null,
+    "deposit": null
+  },
+  {
+    "date": "2021-10-11",
+    "ticker_id": "ESPO.MI",
+    "action": "buy",
+    "quantity": 6,
+    "price": 34.635,
+    "commission": 2.06,
+    "gain": null,
+    "deposit": null
+  },
+  {
+    "date": "2021-10-11",
+    "ticker_id": "AIAI.MI",
+    "action": "buy",
+    "quantity": 12,
+    "price": 17.67,
+    "commission": 2.06,
+    "gain": null,
+    "deposit": null
+  }
+]
