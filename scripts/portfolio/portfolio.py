@@ -1,0 +1,124 @@
+import logging
+import os
+import re
+from typing import Text
+import pandas as pd
+
+from scripts.data.load import load_csv
+from scripts.portfolio.ticker import Ticker
+from scripts.portfolio.tickers import Tickers
+from scripts.utils.date import today
+
+logger = logging.getLogger('Portfolio')
+
+
+class Portfolio:
+
+    def __init__(self,
+                 transactions_path: Text):
+        self.transactions_path = transactions_path
+        self.transactions = self._init_transactions()
+
+    def _init_transactions(self):
+        if os.path.exists(self.transactions_path):
+            return load_csv(self.transactions_path)
+        else:
+            return pd.DataFrame(columns=['date', 'ticker_id', 'action', 'quantity',
+                                         'price', 'commission', 'gain', 'deposit'])
+
+    def add_transaction(self,
+                        tickers: Tickers,
+                        date: Text,
+                        ticker_id: Text,
+                        action: Text,
+                        quantity: int,
+                        price: float,
+                        commission: float,
+                        gain: float,
+                        deposit: float):
+
+        date_match = re.match(r'^(\d{4})-(\d{2})-(\d{2})', date)
+        if not date_match:
+            error = f' > No valid date format. Give YYYY-MM-DD'
+            logger.error(error)
+            raise Exception(error)
+
+        action = action.lower()
+        if action not in ['buy', 'sell', 'deposit']:
+            error = f' > No valid action: {action}'
+            logger.error(error)
+            raise Exception(error)
+
+        if action != 'deposit' and ticker_id not in tickers.tickers_dict:
+            logger.error(f' > Ticker {ticker_id} not in tickers details')
+            return
+
+        row = {'date': date,
+               'ticker_id': ticker_id,
+               'action': action,
+               'quantity': quantity,
+               'price': price,
+               'commission': commission,
+               'gain': gain,
+               'deposit': deposit}
+
+        self.transactions = self.transactions.append(pd.DataFrame(row, index=[0])) \
+            .reset_index(drop=True)
+
+        logger.info(f' > Ticker {ticker_id} transaction inserted at {self.transactions}')
+        self.save_transactions()
+
+    def _retrive_ticker_performance(self,
+                                    ticker: Ticker):
+        ticker_transactions = self.transactions[self.transactions['ticker_id'] == ticker.id]
+        if len(ticker_transactions) == 0:
+            logger.error(f' > No transaction of ticker {ticker.id} found!')
+            return None
+
+        dates = ticker_transactions['date'].to_list()
+
+        ticker_performance = pd.DataFrame()
+
+        i, cum_quantity, cum_spent = 0, 0, 0
+        for index, row in ticker_transactions.iterrows():
+            action = row['action']
+            quantity = row['quantity']
+            price = row['price']
+            commission = row['commission']
+
+            if action == 'buy':
+                spent = (quantity * price) + commission if action == 'buy' else None
+                cum_quantity += quantity
+
+            elif action == 'sell':
+                cum_quantity -= quantity
+                spent = ((quantity * price) - commission) * (-1)
+
+            else:
+                raise Exception(f'No valid action: {action} for ticker {ticker.id}')
+
+            cum_spent += spent
+
+            start_date = dates[i]
+            end_date = dates[i + 1] if i + 1 < len(dates) else str(today())
+            i += 1
+
+            ticker_df = ticker.get_data_from_date(start_date=start_date,
+                                                  end_date=end_date).iloc[1:]
+            output_dict = {'ticker_id': [ticker.id]*len(ticker_df),
+                           'price': ticker_df['Close'],
+                           'volume': ticker_df['Volume'],
+                           'cum_quantity': [cum_quantity] * len(ticker_df),
+                           'cum_spent': [cum_spent] * len(ticker_df)
+                           }
+            output_df = pd.DataFrame(output_dict, index=ticker_df.index)
+            output_df['potential_gain'] = (output_df['price'] * output_df['cum_quantity']) - commission - output_df['cum_spent']
+            output_df['performance'] = output_df['potential_gain'] / output_df['cum_spent']
+
+            ticker_performance = ticker_performance.append(output_df)
+
+        return ticker_performance
+
+    def save_transactions(self):
+        self.transactions.to_csv(self.transactions_path)
+        logger.info(f' > Saving transactions at {self.transactions_path}')
