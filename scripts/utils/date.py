@@ -26,3 +26,8 @@ def readable_date():
 
 def today() -> Text:
     return datetime.date.today()
+
+
+def parse_date(date_str: Text):
+    date_format = '%Y-%m-%d'
+    return datetime.datetime.strptime(date_str, date_format)

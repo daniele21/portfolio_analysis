@@ -31,7 +31,7 @@ class Portfolio:
                         date: Text,
                         ticker_id: Text,
                         action: Text,
-                        quantity: int,
+                        quantity: float,
                         price: float,
                         commission: float,
                         gain: float,
@@ -60,7 +60,8 @@ class Portfolio:
                'price': price,
                'commission': commission,
                'gain': gain,
-               'deposit': deposit}
+               'deposit': deposit,
+               'spent': (quantity * price) + commission}
 
         self.transactions = self.transactions.append(pd.DataFrame(row, index=[0])) \
             .reset_index(drop=True)
@@ -68,8 +69,24 @@ class Portfolio:
         logger.info(f' > Ticker {ticker_id} transaction inserted at {self.transactions}')
         self.save_transactions()
 
-    def _retrive_ticker_performance(self,
-                                    ticker: Ticker):
+    def get_amount_spent(self,
+                         instrument: Text = None,
+                         tickers: Tickers = None):
+        if instrument is not None:
+            instrument_df = tickers.get_tickers_by_instrument(instrument)
+            ticker_ids = instrument_df['ticker_id'].to_list()
+            amount_spent = 0
+            for ticker_id in ticker_ids:
+                ticker_df = self.transactions[self.transactions['ticker_id'] == ticker_id]
+                amount_spent += ticker_df['spent'].sum() - ticker_df['gain'].sum()
+
+        else:
+            amount_spent = self.transactions['spent'].sum() - self.transactions['gain'].sum()
+
+        return amount_spent
+
+    def get_ticker_performance(self,
+                               ticker: Ticker):
         ticker_transactions = self.transactions[self.transactions['ticker_id'] == ticker.id]
         if len(ticker_transactions) == 0:
             logger.error(f' > No transaction of ticker {ticker.id} found!')
@@ -105,19 +122,54 @@ class Portfolio:
 
             ticker_df = ticker.get_data_from_date(start_date=start_date,
                                                   end_date=end_date).iloc[1:]
-            output_dict = {'ticker_id': [ticker.id]*len(ticker_df),
+            output_dict = {'ticker_id': [ticker.id] * len(ticker_df),
                            'price': ticker_df['Close'],
                            'volume': ticker_df['Volume'],
                            'cum_quantity': [cum_quantity] * len(ticker_df),
                            'cum_spent': [cum_spent] * len(ticker_df)
                            }
             output_df = pd.DataFrame(output_dict, index=ticker_df.index)
-            output_df['potential_gain'] = (output_df['price'] * output_df['cum_quantity']) - commission - output_df['cum_spent']
+            output_df['potential_gain'] = (output_df['price'] * output_df['cum_quantity']) - commission - output_df[
+                'cum_spent']
             output_df['performance'] = output_df['potential_gain'] / output_df['cum_spent']
 
             ticker_performance = ticker_performance.append(output_df)
 
         return ticker_performance
+
+    def get_ticker_transactions(self,
+                                ticker_id: Text):
+        ticker_df = self.transactions[self.transactions['ticker_id'] == ticker_id]
+        return ticker_df
+
+    def get_actual_stake(self,
+                         tickers: Tickers):
+        df = tickers.ticker_details_df[['ticker_id', 'instrument']]
+        amount_spent = self.get_amount_spent()
+        ticker_stake = {}
+
+        for i, row in df.iterrows():
+            ticker_id, instrument = row['ticker_id'], row['instrument']
+            ticker_df = self.get_ticker_transactions(ticker_id)
+            ticker_spent = ticker_df['spent'].sum() - ticker_df['gain'].sum()
+            ticker_stake[ticker_id] = ticker_spent / amount_spent
+
+        return ticker_stake
+
+    def get_actual_stake_by_instrument(self,
+                                       instrument: Text,
+                                       tickers: Tickers,
+                                       ):
+        amount_spent = self.get_amount_spent(instrument=instrument,
+                                             tickers=tickers)
+        tickers_ids = tickers.get_tickers_by_instrument(instrument)
+        instrument_stake = {ticker_id: 0 for ticker_id in tickers_ids['ticker_id'].to_list()}
+
+        for ticker_id in tickers_ids['ticker_id'].to_list():
+            ticker_df = self.transactions[self.transactions['ticker_id'] == ticker_id]
+            instrument_stake[ticker_id] += (ticker_df['spent'].sum() - ticker_df['gain'].sum()) / amount_spent
+
+        return instrument_stake
 
     def save_transactions(self):
         self.transactions.to_csv(self.transactions_path)

@@ -11,9 +11,9 @@ from scripts.utils.date import today
 logger = logging.getLogger('Update Data')
 
 
-def add_ticker_data(ticker: Text):
-    ticker_data_path = f'{TICKER_DATA_DIR}/{ticker}.csv'
-    check_ticker_existence(ticker_id=ticker)
+def add_ticker_data(ticker_id: Text):
+    ticker_data_path = f'{TICKER_DATA_DIR}/{ticker_id}.csv'
+    check_ticker_existence(ticker_id=ticker_id)
 
     if os.path.exists(ticker_data_path):
         ticker_df = pd.read_csv(ticker_data_path,
@@ -27,12 +27,12 @@ def add_ticker_data(ticker: Text):
     if str(today()) == last_date:
         return ticker_df
 
-    ticker_update_df = extract_data_from_yahoo(ticker=ticker,
+    ticker_update_df = extract_data_from_yahoo(ticker=ticker_id,
                                                start_date=last_date)
 
     ticker_df = ticker_df.append(ticker_update_df)
     ticker_df.to_csv(ticker_data_path)
-    logger.info(f' > Ticker {ticker} data stored at {ticker_data_path}')
+    logger.info(f' > Ticker {ticker_id} data stored at {ticker_data_path}')
 
     return ticker_df
 

@@ -40,7 +40,8 @@ def add_transaction(date: Text,
     if action != 'deposit':
         check_ticker_existence(ticker_id=ticker_id)
 
-    row = {'ticker_id': ticker_id,
+    row = {'date': date,
+           'ticker_id': ticker_id,
            'action': action,
            'quantity': quantity,
            'price': price,

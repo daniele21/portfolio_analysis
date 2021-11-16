@@ -26,7 +26,10 @@ def extract_data_from_yahoo(ticker: Text,
     :return:
     """
 
+    str_today = str(today())
     start_date = start_date if start_date else BASE_DATE
+    if str_today == start_date:
+        return None
 
     ticker = Ticker(ticker=ticker)
     ticker_data = ticker.history(start=start_date)
