@@ -118,5 +118,38 @@
     "instrument": "ETF",
     "risk": 6,
     "fee": 0.55
+  },
+  {
+    "ticker_id": "ADA-EUR",
+    "ticker_name": "Cardano",
+    "isin": null,
+    "instrument": "Crypto",
+    "risk": 7,
+    "fee": 0.0
+  },
+  {
+    "ticker_id": "BTC-EUR",
+    "ticker_name": "Bitcoin",
+    "isin": null,
+    "instrument": "Crypto",
+    "risk": 7,
+    "fee": 0.0
+  },
+  {
+    "ticker_id": "ETH-EUR",
+    "ticker_name": "Ethereum",
+    "isin": null,
+    "instrument": "Crypto",
+    "risk": 7,
+    "fee": 0.0
+  },
+  {
+    "ticker_id": "FET-EUR",
+    "ticker_name": "Fetch-AI",
+    "isin": null,
+    "instrument": "Crypto",
+    "risk": 7,
+    "fee": 0.0
   }
+
 ]

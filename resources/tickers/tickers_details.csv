@@ -14,3 +14,7 @@
 12,SWDA.MI,iShares Core MSCI World UCITS ETF USD,IE00B4L5Y983,ETF,5.0,0.3
 13,IWVL.MI,iShares Edge MSCI World Value Factor UCITS ETF,IE00BP3QZB59,ETF,5.0,0.2
 14,ESPO.MI,VanEck Vectors Video Gaming and eSports UCITS ETF,IE00BP3QZB59,ETF,6.0,0.55
+15,ADA-EUR,Cardano,,Crypto,7.0,0.0
+16,BTC-EUR,Bitcoin,,Crypto,7.0,0.0
+17,ETH-EUR,Ethereum,,Crypto,7.0,0.0
+18,FET-EUR,Fetch-AI,,Crypto,7.0,0.0
