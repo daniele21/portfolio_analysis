@@ -11,6 +11,8 @@ tickers = Tickers(TICKER_DETAILS_PATH, TICKER_DATA_DIR)
 portfolio = Portfolio(TRANSACTION_PATH)
 dashboard = FinanceDashboard(tickers, portfolio)
 
+tickers.update_tickers_data()
+
 fig = tab_figures({
     'Stake': dashboard.stake_status_plot(),
     'Performance': dashboard.ticker_performance_plot(),

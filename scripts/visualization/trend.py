@@ -82,6 +82,8 @@ def plot_stock_price(ticker_df,
         start_date, end_date = date_slider.value
         p.x_range.start = start_date
         p.x_range.end = end_date
+        p.y_range.start = min(stock.data['Close'][start_date:end_date]) - 0.5
+        p.y_range.end = max(stock.data['Close'][start_date:end_date]) + 0.5
 
     date_slider.on_change('value', update_x_range)
 
@@ -130,6 +132,8 @@ def plot_performance(stock,
             start_date, end_date = date_slider.value
             p.x_range.start = start_date
             p.x_range.end = end_date
+            p.y_range.start = min(stock.data['performance'][start_date:end_date]) - 0.5
+            p.y_range.end = max(stock.data['performance'][start_date:end_date]) + 0.5
 
         date_slider.on_change('value', update_x_range)
 
@@ -192,6 +196,8 @@ def plot_ticker_volume(ticker_df,
         start_date, end_date = date_slider.value
         p.x_range.start = start_date
         p.x_range.end = end_date
+        p.y_range.start = min(stock.data['Volume'][start_date:end_date]) - 0.5
+        p.y_range.end = max(stock.data['Volume'][start_date:end_date]) + 0.5
 
     date_slider.on_change('value', update_x_range)
 
