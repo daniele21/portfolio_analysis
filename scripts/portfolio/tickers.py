@@ -1,3 +1,4 @@
+from threading import Thread
 from typing import Text
 
 from scripts.data.load import load_csv
@@ -71,10 +72,15 @@ class Tickers:
         return
 
     def update_tickers_data(self):
-
+        thread_list = []
         for ticker_id in self.tickers_dict:
             ticker = self.tickers_dict[ticker_id]
-            ticker.update_data()
+            thread = Thread(target=ticker.update_data)
+            thread.start()
+            thread_list.append(thread)
+
+        for t in thread_list:
+            t.join()
 
         return
 
