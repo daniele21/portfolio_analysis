@@ -56,7 +56,8 @@ class Ticker:
         if not check:
             return None
 
-        filter_df = self.data[start_date: end_date]
+        data = self.data.set_index('Date')
+        filter_df = data[start_date: end_date]
 
         return filter_df
 

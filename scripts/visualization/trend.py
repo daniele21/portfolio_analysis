@@ -13,7 +13,7 @@ from bokeh.models.formatters import NumeralTickFormatter
 # Define constants
 from scripts.paths import TICKER_DATA_DIR
 
-W_PLOT = 1500
+W_PLOT = 1300
 H_PLOT = 600
 TOOLS = 'pan,wheel_zoom,hover,reset'
 
@@ -51,8 +51,6 @@ def plot_stock_price(ticker_df,
     dec = stock.data['Open'] > stock.data['Close']
     view_inc = CDSView(source=stock, filters=[BooleanFilter(inc)])
     view_dec = CDSView(source=stock, filters=[BooleanFilter(dec)])
-
-    # date_slider.on_change('value', update_data)
 
     # map dataframe indices to date strings and use as label overrides
     p.xaxis.major_label_overrides = {
@@ -97,6 +95,52 @@ def plot_stock_price(ticker_df,
                             ("Open", "@Open{€ 0,0.00}"),
                             ("Close", "@Close{€ 0,0.00}"),
                             ("Volume", "@Volume{(€ 0.00 a)}")]
+    price_hover.formatters = {"Date": 'datetime'}
+
+    return p
+
+
+def plot_performance(stock,
+                     date_slider: DateRangeSlider = None):
+    p = figure(plot_width=W_PLOT, plot_height=H_PLOT, tools=TOOLS,
+               title="Performance", toolbar_location='above')
+
+    # map dataframe indices to date strings and use as label overrides
+    p.xaxis.major_label_overrides = {
+        i + int(stock.data['index'][0]): date.strftime('%b %d') for i, date in
+        enumerate(pd.to_datetime(stock.data["Date"]))
+    }
+    p.xaxis.bounds = (stock.data['index'][0], stock.data['index'][-1])
+
+    p.line(x='index', y='performance', color=BLUE, source=stock)
+    p.line(x='index', y=0, color=BLUE_LIGHT, source=stock)
+
+    p.legend.location = "top_left"
+    p.legend.border_line_alpha = 0
+    p.legend.background_fill_alpha = 0
+    p.legend.click_policy = "mute"
+
+    p.yaxis.formatter = NumeralTickFormatter(format='€ 0,0[.]00')
+    p.x_range.range_padding = 0.05
+    p.xaxis.ticker.desired_num_ticks = 40
+    p.xaxis.major_label_orientation = 3.14 / 4
+
+    if date_slider:
+        def update_x_range(attr, x, y):
+            start_date, end_date = date_slider.value
+            p.x_range.start = start_date
+            p.x_range.end = end_date
+
+        date_slider.on_change('value', update_x_range)
+
+    # Select specific tool for the plot
+    price_hover = p.select(dict(type=HoverTool))
+
+    # Choose, which glyphs are active by glyph name
+    price_hover.names = ["performance"]
+    # Creating tooltips
+    price_hover.tooltips = [("Datetime", "@Date{%Y-%m-%d}"),
+                            ("Performance", "@performance{(0.00 a)}")]
     price_hover.formatters = {"Date": 'datetime'}
 
     return p

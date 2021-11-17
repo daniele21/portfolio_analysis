@@ -1,0 +1,5 @@
+ETF = 'ETF'
+CRYPTO = 'Crypto'
+STOCK = 'Stock'
+
+INSTRUMENT_LIST = [ETF, CRYPTO, STOCK]

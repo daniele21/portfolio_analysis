@@ -4,6 +4,7 @@ import re
 from typing import Text
 import pandas as pd
 
+from scripts.constants.constants import ETF, CRYPTO, STOCK
 from scripts.data.load import load_csv
 from scripts.portfolio.ticker import Ticker
 from scripts.portfolio.tickers import Tickers
@@ -146,13 +147,15 @@ class Portfolio:
                          tickers: Tickers):
         df = tickers.ticker_details_df[['ticker_id', 'instrument']]
         amount_spent = self.get_amount_spent()
-        ticker_stake = {}
+        ticker_stake = {ETF: 0,
+                        CRYPTO: 0,
+                        STOCK: 0}
 
         for i, row in df.iterrows():
             ticker_id, instrument = row['ticker_id'], row['instrument']
             ticker_df = self.get_ticker_transactions(ticker_id)
             ticker_spent = ticker_df['spent'].sum() - ticker_df['gain'].sum()
-            ticker_stake[ticker_id] = ticker_spent / amount_spent
+            ticker_stake[instrument] += ticker_spent / amount_spent
 
         return ticker_stake
 

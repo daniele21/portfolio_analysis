@@ -78,8 +78,19 @@ class Tickers:
 
         return
 
-    def get_ticker(self, ticker_id: Text):
-        return self.tickers_dict[ticker_id]
+    def get_ticker(self,
+                   ticker_id: Text) -> Ticker:
+        ticker_df = self.tickers_dict[ticker_id]
+        ticker_df.data['Date'] = pd.to_datetime(ticker_df.data.index)
+        ticker_df.data = ticker_df.data.reset_index(drop=True)
+        return ticker_df
+
+    def get_ticker_details(self,
+                           ticker_id: Text):
+        return self.ticker_details_df[self.ticker_details_df['ticker_id'] == ticker_id].iloc[0].to_dict()
+
+    def get_ticker_ids(self):
+        return list(self.tickers_dict.keys())
 
     def get_tickers_by_instrument(self,
                                   instrument: Text):
