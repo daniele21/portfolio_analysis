@@ -70,7 +70,17 @@ class TestPortfolio(unittest.TestCase):
         stock_stake = portfolio.get_actual_stake_by_instrument(instrument='Stock',
                                                                tickers=self.tickers)
 
-        self.assertIsNotNone('ciao')
+        return
+
+    def test_actual_stake_by_etf(self):
+        portfolio = Portfolio(TRANSACTION_PATH)
+        portfolio.get_actual_stake_by_etf(tickers=self.tickers)
+
+        return
+
+    def test_ticker_performances(self):
+        portfolio = Portfolio(TRANSACTION_PATH)
+        portfolio.get_ticker_performances(tickers=self.tickers)
 
 
 if __name__ == '__main__':
