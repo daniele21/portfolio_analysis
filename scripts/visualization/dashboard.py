@@ -30,6 +30,8 @@ class FinanceDashboard:
             stock = ColumnDataSource(
                 data=dict(Date=[], Open=[], Close=[], High=[], Low=[], index=[]))
             ticker = self.tickers.get_ticker(ticker_id)
+            ticker.data['Date'] = pd.to_datetime(ticker.data.index)
+            ticker.data = ticker.data.reset_index(drop=True)
             stock.data = stock.from_df(ticker.data)
             if len(stock.data['index']) <= 1:
                 continue
@@ -61,11 +63,13 @@ class FinanceDashboard:
     def ticker_performance_plot(self) -> Tabs:
         tabs_dict = {}
         stock_dict = {}
-        performances_df = pd.DataFrame()
 
         for ticker_id in self.ticker_ids:
             ticker = self.tickers.get_ticker(ticker_id)
-            performance_df = self.portfolio.get_ticker_performance(ticker)
+            ticker.data['Date'] = pd.to_datetime(ticker.data.index)
+            ticker.data = ticker.data.reset_index(drop=True)
+
+            performance_df = self.portfolio.get_ticker_performance(ticker).copy(True)
             performance_df = performance_df.reset_index()[['Date', 'performance']]
 
             stock = ColumnDataSource(
@@ -122,7 +126,8 @@ class FinanceDashboard:
         return tabs
 
     def portfolio_optimization(self):
-        ticker_group = {ETF: ETF_TICKERS,
+        ticker_group = {'All': None,
+                        ETF: ETF_TICKERS,
                         CRYPTO: CRYPTO_TICKERS,
                         STOCK: STOCK_TICKERS}
         group_tabs = {}
@@ -140,13 +145,13 @@ class FinanceDashboard:
                 "weights": ef['weights']
             })
 
-            ticker_weights = np.array(ef['weights'])
+            ticker_weights = np.array(ef['weights'].to_list())
             ticker_weights_df = pd.DataFrame(ticker_weights, columns=cov.columns)
 
-            ef = pd.concat((ef, ticker_weights_df), axis=1)
+            ef = pd.concat((ef.reset_index(drop=True), ticker_weights_df), axis=1)
             ef = ef.set_index('volatility')
 
-            fig = optimization_plot(ef, title=f'{group} optimization')
+            fig = optimization_plot(ef, er, cov, title=f'{group} optimization')
             group_tabs[group] = fig
 
         tabs = tab_figures(group_tabs)

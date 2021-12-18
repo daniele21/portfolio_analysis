@@ -1,4 +1,5 @@
 import logging
+from copy import deepcopy
 from threading import Thread
 from typing import Text, List
 
@@ -10,7 +11,7 @@ from scripts.constants.constants import RISK_FREE_RATE
 from scripts.data.load import load_csv
 from scripts.portfolio.ticker import Ticker
 from scripts.portfolio_operations.operations import sharpe_ratio, portfolio_vol, annualized_rets, portfolio_return, \
-    get_cov, get_er
+    get_cov, get_er, get_df_from_dict
 from scripts.portfolio_operations.optimizations import optimal_weights, msr, get_efficient_frontier
 from scripts.portfolio_operations.utils import plot_ef
 
@@ -154,7 +155,8 @@ class Tickers:
                                                     features=features,
                                                     freq=freq)
 
-        cov = get_cov(returns_dict)
+        returns_df = get_df_from_dict(returns_dict)
+        cov = get_cov(returns_df)
         tickers = cov.columns
 
         weights = np.repeat(1 / len(tickers), len(tickers)) if weights is None else weights
@@ -168,11 +170,13 @@ class Tickers:
                            features: List = None,
                            start_date: Text = None,
                            weights=None):
-        returns_df = self.get_tickers_return_df(start_date=start_date,
-                                                features=features,
-                                                freq=freq)
+        returns_dict = self.get_tickers_return_dict(start_date=start_date,
+                                                    features=features,
+                                                    freq=freq)
 
+        returns_df = get_df_from_dict(returns_dict)
         returns = annualized_rets(returns_df, periods_per_year)
+
         weights = np.repeat(1 / len(returns_df.columns), len(returns_df.columns)) if weights is None else weights
         port_return = portfolio_return(returns[returns_df.columns], weights)
 
@@ -186,9 +190,10 @@ class Tickers:
                                start_date: Text = None
                                ):
 
-        returns_df = self.get_tickers_return_df(start_date=start_date,
-                                                features=features,
-                                                freq=freq)
+        returns_dict = self.get_tickers_return_dict(start_date=start_date,
+                                                    features=features,
+                                                    freq=freq)
+        returns_df = get_df_from_dict(returns_dict)
         er = get_er(returns_df, periods_per_year)
         sub_returns_df = returns_df[er.index].dropna()
         cov = get_cov(sub_returns_df)
@@ -219,7 +224,8 @@ class Tickers:
                              risk_free_rate: float = RISK_FREE_RATE,
                              start_date: Text = None,
                              periods_per_year=252):
-        returns_df = self.get_tickers_return_df()
+        returns_dict = self.get_tickers_return_dict()
+        returns_df = get_df_from_dict(returns_dict)
         returns_df = returns_df[start_date:] if start_date is not None else returns_df
         cov = returns_df[start_date:].cov() if start_date is not None else returns_df.cov()
         er = annualized_rets(returns_df, periods_per_year)
@@ -240,7 +246,8 @@ class Tickers:
                               periods_per_year=252,
                               n_points: int = 20,
                               ):
-        returns_df = self.get_tickers_return_df()
+        returns_dict = self.get_tickers_return_dict()
+        returns_df = get_df_from_dict(returns_dict)
         returns_df = returns_df[start_date:] if start_date is not None else returns_df
         cov = returns_df[start_date:].cov() if start_date is not None else returns_df.cov()
         er = annualized_rets(returns_df, periods_per_year)
@@ -262,10 +269,11 @@ class Tickers:
 
     def get_ticker(self,
                    ticker_id: Text) -> Ticker:
-        ticker_df = self.tickers_dict[ticker_id]
-        ticker_df.data['Date'] = pd.to_datetime(ticker_df.data.index)
-        ticker_df.data = ticker_df.data.reset_index(drop=True)
-        return ticker_df
+        ticker = self.tickers_dict[ticker_id]
+        # ticker.data['Date'] = pd.to_datetime(ticker.data.index)
+        # ticker.data = ticker.data.reset_index(drop=True)
+
+        return deepcopy(ticker)
 
     def get_ticker_details(self,
                            ticker_id: Text):
