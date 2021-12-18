@@ -1,9 +1,20 @@
+import logging
 from threading import Thread
-from typing import Text
+from typing import Text, List
 
+import numpy as np
+import pandas as pd
+from tqdm import tqdm
+
+from scripts.constants.constants import RISK_FREE_RATE
 from scripts.data.load import load_csv
 from scripts.portfolio.ticker import Ticker
-import pandas as pd
+from scripts.portfolio_operations.operations import sharpe_ratio, portfolio_vol, annualized_rets, portfolio_return, \
+    get_cov, get_er
+from scripts.portfolio_operations.optimizations import optimal_weights, msr, get_efficient_frontier
+from scripts.portfolio_operations.utils import plot_ef
+
+logger = logging.getLogger('Tickers')
 
 
 class Tickers:
@@ -84,6 +95,174 @@ class Tickers:
 
         return
 
+    def get_tickers_df(self):
+        tickers_df = pd.DataFrame()
+
+        for ticker in tqdm(self.tickers_dict):
+            ticker_df = self.tickers_dict[ticker].data
+            if len(ticker_df) > 1:
+                tickers_df = tickers_df.merge(ticker_df['Close'].to_frame(ticker),
+                                              how='outer',
+                                              left_index=True,
+                                              right_index=True)
+
+        return tickers_df
+
+    def get_tickers_return_df(self,
+                              start_date: Text = None,
+                              features: List = None,
+                              freq: str = 'W'):
+        # if freq not in ['W', 'M']:
+        #     logger.warning(f' > Frequency is not W nor M')
+
+        tickers_df = self.get_tickers_df()
+        tickers_df = tickers_df[start_date:] if start_date is not None else tickers_df
+
+        returns_dict = {}
+        for ticker in tickers_df:
+            if features is None or (features is not None and ticker in features):
+                returns_dict[ticker] = tickers_df[ticker].pct_change(freq=freq)
+
+        returns_df = pd.DataFrame(returns_dict)
+
+        return returns_df
+
+    def get_sharpe_ratios(self,
+                          freq: str,
+                          periods_per_year: int,
+                          features: List = None,
+                          start_date: Text = None,
+                          risk_free_rate: float = RISK_FREE_RATE,
+                          ):
+        return_df = self.get_tickers_return_df(start_date=start_date,
+                                               features=features,
+                                               freq=freq)
+        sharpe_ratios = {}
+
+        for ticker in return_df:
+            ticker_df = return_df[ticker]
+            ticker_df = ticker_df.dropna()
+            if len(ticker_df) > 1:
+                sharpe_ratios[ticker] = sharpe_ratio(ticker_df.dropna(),
+                                                     risk_free_rate=risk_free_rate,
+                                                     periods_per_year=periods_per_year)
+
+        return sharpe_ratios
+
+    def get_tickers_volatility(self,
+                               freq: str,
+                               features: List = None,
+                               start_date: Text = None,
+                               weights=None,
+                               ):
+        returns_df = self.get_tickers_return_df(start_date=start_date,
+                                                features=features,
+                                                freq=freq)
+        cov = get_cov(returns_df)
+
+        weights = np.repeat(1 / len(returns_df.columns), len(returns_df.columns)) if weights is None else weights
+        volatility = portfolio_vol(weights, cov.loc[returns_df.columns, returns_df.columns])
+
+        return volatility
+
+    def get_tickers_return(self,
+                           freq: str,
+                           periods_per_year: int,
+                           features: List = None,
+                           start_date: Text = None,
+                           weights=None):
+        returns_df = self.get_tickers_return_df(start_date=start_date,
+                                                features=features,
+                                                freq=freq)
+
+        returns = annualized_rets(returns_df, periods_per_year)
+        weights = np.repeat(1 / len(returns_df.columns), len(returns_df.columns)) if weights is None else weights
+        port_return = portfolio_return(returns[returns_df.columns], weights)
+
+        return port_return
+
+    def get_efficient_frontier(self,
+                               n_points,
+                               freq: str,
+                               periods_per_year: int,
+                               features: List = None,
+                               start_date: Text = None
+                               ):
+
+        returns_df = self.get_tickers_return_df(start_date=start_date,
+                                                features=features,
+                                                freq=freq)
+        er = get_er(returns_df, periods_per_year)
+        sub_returns_df = returns_df[er.index].dropna()
+        cov = get_cov(sub_returns_df)
+
+        ef = get_efficient_frontier(n_points, er, cov)
+
+        return ef, er, cov
+
+    def plot_efficient_frontier(self,
+                                n_points,
+                                freq: str,
+                                periods_per_year: int,
+                                features: List = None,
+                                start_date: Text = None):
+
+        ef, er, cov = self.get_efficient_frontier(n_points, freq, periods_per_year,
+                                                  features, start_date)
+
+        plot_ef(ef['weights'], er, cov,
+                show_gmv=True,
+                show_ew=True,
+                show_cml=True,
+                riskfree_rate=RISK_FREE_RATE)
+
+        return ef, er, cov
+
+    def get_max_sharpe_ratio(self,
+                             risk_free_rate: float = RISK_FREE_RATE,
+                             start_date: Text = None,
+                             periods_per_year=252):
+        returns_df = self.get_tickers_return_df()
+        returns_df = returns_df[start_date:] if start_date is not None else returns_df
+        cov = returns_df[start_date:].cov() if start_date is not None else returns_df.cov()
+        er = annualized_rets(returns_df, periods_per_year)
+
+        er = er[returns_df.columns]
+        cov = cov.loc[returns_df.columns, returns_df.columns]
+
+        msr_value = msr(risk_free_rate, er, cov)
+        msr_weights = pd.DataFrame(msr_value, index=returns_df.columns)
+
+        vol = self.get_tickers_volatility(weights=msr_value)
+        ret = self.get_tickers_return(weights=msr_value)
+
+        return msr_weights, vol, ret
+
+    def get_portfolio_min_vol(self,
+                              start_date: Text = None,
+                              periods_per_year=252,
+                              n_points: int = 20,
+                              ):
+        returns_df = self.get_tickers_return_df()
+        returns_df = returns_df[start_date:] if start_date is not None else returns_df
+        cov = returns_df[start_date:].cov() if start_date is not None else returns_df.cov()
+        er = annualized_rets(returns_df, periods_per_year)
+
+        er = er[returns_df.columns]
+        cov = cov.loc[returns_df.columns, returns_df.columns]
+        weights = optimal_weights(n_points, er, cov)
+        rets = [portfolio_return(w, er) for w in weights]
+        vol = [portfolio_vol(w, cov) for w in weights]
+        rv = pd.DataFrame({
+            "returns": rets,
+            "volatility": vol,
+            "weights": weights
+        })
+        rv = rv.sort_values(by='volatility')
+        result = rv.iloc[0]
+
+        return result
+
     def get_ticker(self,
                    ticker_id: Text) -> Ticker:
         ticker_df = self.tickers_dict[ticker_id]
@@ -107,4 +286,3 @@ class Tickers:
 
     def save_details(self):
         self.ticker_details_df.to_csv(self.ticker_details_path)
-

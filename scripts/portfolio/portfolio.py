@@ -138,6 +138,15 @@ class Portfolio:
 
         return ticker_performance
 
+    def get_ticker_performances(self,
+                                tickers: Tickers):
+        performances = pd.DataFrame()
+
+        for ticker_id in tickers.tickers_dict:
+            ticker_performance_df = self.get_ticker_performance(tickers.get_ticker(ticker_id))
+            performances = performances.merge(ticker_performance_df['performance'], right_index=True)
+            performances = performances.rename(columns={'performance': ticker_id})
+
     def get_ticker_transactions(self,
                                 ticker_id: Text):
         ticker_df = self.transactions[self.transactions['ticker_id'] == ticker_id]
@@ -173,6 +182,18 @@ class Portfolio:
             instrument_stake[ticker_id] += (ticker_df['spent'].sum() - ticker_df['gain'].sum()) / amount_spent
 
         return instrument_stake
+
+    def get_actual_stake_by_risk(self, tickers: Tickers):
+        amount_spent = self.get_amount_spent(tickers=tickers)
+        ticker_items = tickers.ticker_details_df
+        etf_risk_stake = {str(int(risk)): 0 for risk in ticker_items['risk'].to_list()}
+
+        for ticker_id in ticker_items['ticker_id'].to_list():
+            ticker_df = self.transactions[self.transactions['ticker_id'] == ticker_id]
+            risk = ticker_items[ticker_items['ticker_id'] == ticker_id]['risk'].iloc[0]
+            etf_risk_stake[str(int(risk))] += (ticker_df['spent'].sum() - ticker_df['gain'].sum()) / amount_spent
+
+        return etf_risk_stake
 
     def save_transactions(self):
         self.transactions.to_csv(self.transactions_path)

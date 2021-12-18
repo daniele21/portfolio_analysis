@@ -1,10 +1,13 @@
 import logging
 import os
 from typing import Text
+
 import pandas as pd
+
 from scripts.data.load import load_csv
-from scripts.extraction.yahoo_extraction import extract_data_from_yahoo
+from scripts.extraction.yahoo_extraction import extract_data
 from scripts.portfolio.utils import check_date
+from scripts.utils.pandas_memory import pandas_series_to_float16
 
 
 class Ticker:
@@ -39,11 +42,16 @@ class Ticker:
             self.logger.info(f' > Saving ticker data at {self.path}')
             data.to_csv(self.path)
 
+        for col in data.columns:
+            data[col] = pandas_series_to_float16(data[col])
+
         return data
 
     def _load_data(self, start_date):
-        data = extract_data_from_yahoo(ticker=self.id,
-                                       start_date=start_date)
+        # data = extract_data_from_yahoo(ticker=self.id,
+        #                                start_date=start_date)
+        data = extract_data(ticker=self.id,
+                            start_date=start_date)
         if data is not None:
             return data
         else:

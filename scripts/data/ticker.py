@@ -1,10 +1,11 @@
 import logging
 import os
 from typing import Text
+
 import pandas as pd
 
 from scripts.data.check import check_ticker_existence
-from scripts.extraction.yahoo_extraction import extract_data_from_yahoo
+from scripts.extraction.yahoo_extraction import extract_data
 from scripts.paths import TICKER_DATA_DIR, TICKER_DETAILS_PATH
 from scripts.utils.date import today
 
@@ -27,8 +28,10 @@ def add_ticker_data(ticker_id: Text):
     if str(today()) == last_date:
         return ticker_df
 
-    ticker_update_df = extract_data_from_yahoo(ticker=ticker_id,
-                                               start_date=last_date)
+    # ticker_update_df = extract_data_from_yahoo(ticker=ticker_id,
+    #                                            start_date=last_date)
+    ticker_update_df = extract_data(ticker=ticker_id,
+                                    start_date=last_date)
 
     ticker_df = ticker_df.append(ticker_update_df)
     ticker_df.to_csv(ticker_data_path)
@@ -45,7 +48,6 @@ def add_ticker_details(ticker_id: Text,
                        fee: float,
                        ticker_details_path: TICKER_DETAILS_PATH
                        ):
-
     if os.path.exists(ticker_details_path):
         ticker_details_df = pd.read_csv(ticker_details_path,
                                         index_col=0)
@@ -69,4 +71,3 @@ def add_ticker_details(ticker_id: Text,
     logger.info(f' > Ticker {ticker_id} details stored at {ticker_details_path}')
 
     return ticker_details_df
-

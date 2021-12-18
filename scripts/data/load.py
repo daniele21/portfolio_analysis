@@ -1,10 +1,11 @@
+import logging
+import os
 from typing import Text
+
 import pandas
 import pandas as pd
 
-from scripts.paths import TICKER_DETAILS_PATH, TICKER_DATA_DIR, TRANSACTION_PATH
-import os
-import logging
+from scripts.paths import TICKER_DETAILS_PATH, TRANSACTION_PATH
 
 logger = logging.getLogger('Load Data')
 
@@ -63,9 +64,8 @@ def get_ticker_transactions(ticker_id: Text,
         logger.error(f' > No valid ticker_id {ticker_id} in transactions - {e}')
         raise Exception(e)
 
+
 # ----------------------------------------------------------------------------------------
-
-
 
 
 def get_recent_file(folder: Text,

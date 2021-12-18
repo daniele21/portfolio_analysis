@@ -1,14 +1,14 @@
-from datetime import datetime
 import datetime as dt
 import logging
+from datetime import datetime
 from typing import List, Text
-import pandas as pd
-from tqdm import tqdm
 
+import pandas as pd
+import pandas_datareader as pdr
+from tqdm import tqdm
 from yfinance import Ticker
 
 from scripts.config import BASE_DATE
-from scripts.data.load import load_data
 from scripts.paths import DATA_DIR
 from scripts.utils.date import readable_timestamp, today
 
@@ -37,6 +37,14 @@ def extract_data_from_yahoo(ticker: Text,
     logger.info(f' > Loading {ticker} data from Yahoo Finance')
 
     return ticker_data
+
+
+def extract_data(ticker: Text,
+                 start_date: Text = None):
+    # start_date = start_date if start_date else BASE_DATE
+
+    data = pdr.get_data_yahoo(ticker, start=start_date)
+    return data
 
 
 def extract_ticker(ticker: Text,

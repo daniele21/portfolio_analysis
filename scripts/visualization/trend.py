@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
-from typing import Text
+from typing import Text, List, Dict
 
 import pandas as pd
 from bokeh.plotting import figure
@@ -37,13 +37,8 @@ def get_ticker_df(ticker_id: Text):
     return df
 
 
-def plot_stock_price(ticker_df,
+def plot_stock_price(stock,
                      date_slider: DateRangeSlider, ):
-    ticker_df = ticker_df
-    stock = ColumnDataSource(
-        data=dict(Date=[], Open=[], Close=[], High=[], Low=[], index=[]))
-    stock.data = stock.from_df(ticker_df)
-
     p = figure(plot_width=W_PLOT, plot_height=H_PLOT, tools=TOOLS,
                title="Stock Price", toolbar_location='above')
 
@@ -114,7 +109,7 @@ def plot_performance(stock,
     }
     p.xaxis.bounds = (stock.data['index'][0], stock.data['index'][-1])
 
-    p.line(x='index', y='performance', color=BLUE, source=stock)
+    p.line(x='index', y='performance', color=BLUE, source=stock, name='performance')
     p.line(x='index', y=0, color=BLUE_LIGHT, source=stock)
 
     p.legend.location = "top_left"
@@ -132,8 +127,8 @@ def plot_performance(stock,
             start_date, end_date = date_slider.value
             p.x_range.start = start_date
             p.x_range.end = end_date
-            p.y_range.start = min(stock.data['performance'][start_date:end_date]) - 0.5
-            p.y_range.end = max(stock.data['performance'][start_date:end_date]) + 0.5
+            p.y_range.start = min(stock.data['performance'][start_date:end_date])
+            p.y_range.end = max(stock.data['performance'][start_date:end_date])
 
         date_slider.on_change('value', update_x_range)
 
@@ -143,21 +138,64 @@ def plot_performance(stock,
     # Choose, which glyphs are active by glyph name
     price_hover.names = ["performance"]
     # Creating tooltips
-    price_hover.tooltips = [("Datetime", "@Date{%Y-%m-%d}"),
-                            ("Performance", "@performance{(0.00 a)}")]
-    price_hover.formatters = {"Date": 'datetime'}
+    price_hover.tooltips = [("Performance", "@performance{(0.00 a)}")]
 
     return p
 
 
-def plot_ticker_volume(ticker_df,
+def plot_performances(stock_dict: Dict,
+                      date_slider: DateRangeSlider = None):
+    p = figure(plot_width=W_PLOT, plot_height=H_PLOT, tools=TOOLS,
+               title="Performance", toolbar_location='above')
+
+    stock_0 = stock_dict[list(stock_dict.keys())[0]]
+
+    # map dataframe indices to date strings and use as label overrides
+    p.xaxis.major_label_overrides = {
+        i + int(stock_0.data['index'][0]): date.strftime('%b %d') for i, date in
+        enumerate(pd.to_datetime(stock_0.data["Date"]))
+    }
+    p.xaxis.bounds = (stock_0.data['index'][0], stock_0.data['index'][-1])
+
+    for ticker_id in stock_dict:
+        stock = stock_dict[ticker_id]
+        p.line(x='index', y='performance', source=stock, name=ticker_id)
+    p.line(x='index', y=0, color=BLUE_LIGHT, source=stock_0)
+
+    p.legend.location = "top_left"
+    p.legend.border_line_alpha = 0
+    p.legend.background_fill_alpha = 0
+    p.legend.click_policy = "mute"
+
+    p.yaxis.formatter = NumeralTickFormatter(format='0,0[.]00')
+    p.x_range.range_padding = 0.05
+    p.xaxis.ticker.desired_num_ticks = 40
+    p.xaxis.major_label_orientation = 3.14 / 4
+
+    if date_slider:
+        def update_x_range(attr, x, y):
+            start_date, end_date = date_slider.value
+            p.x_range.start = start_date
+            p.x_range.end = end_date
+            p.y_range.start = min(stock.data['performance'][start_date:end_date])
+            p.y_range.end = max(stock.data['performance'][start_date:end_date])
+
+        date_slider.on_change('value', update_x_range)
+
+    # Select specific tool for the plot
+    price_hover = p.select(dict(type=HoverTool))
+
+    # Choose, which glyphs are active by glyph name
+    price_hover.names = list(stock_dict.keys())
+    # Creating tooltips
+    price_hover.tooltips = [("Performance", "@performance{(0.00 a)}")]
+
+    return p
+
+
+def plot_ticker_volume(stock,
                        date_slider: DateRangeSlider,
                        ):
-    ticker_df = ticker_df
-    stock = ColumnDataSource(
-        data=dict(Date=[], Open=[], Close=[], High=[], Low=[], index=[]))
-    stock.data = stock.from_df(ticker_df)
-
     w_plot, h_plot = W_PLOT, 300
     p = figure(plot_width=w_plot, plot_height=h_plot, tools=TOOLS,
                title="Stock Volume", toolbar_location='above')
@@ -189,7 +227,7 @@ def plot_ticker_volume(ticker_df,
     price_hover.names = ["volume"]
     # Creating tooltips
     price_hover.tooltips = [("Datetime", "@Date{%Y-%m-%d}"),
-                            ("Volume", "@Volume{($ 0.00 a)}")]
+                            ("Volume", "@Volume{( 0.00 a)}")]
     price_hover.formatters = {"Date": 'datetime'}
 
     def update_x_range(attr, x, y):

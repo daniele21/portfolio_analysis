@@ -3,7 +3,7 @@ from typing import Dict, Text
 
 import numpy
 from bokeh.layouts import gridplot, column
-from bokeh.models import HBar, Div, RadioButtonGroup
+from bokeh.models import HBar, Div, RadioButtonGroup, HoverTool
 from bokeh.palettes import Category20c
 from bokeh.plotting import figure, show
 from bokeh.transform import cumsum
@@ -43,7 +43,16 @@ def stake_plot(stake_dict: Dict,
     bar_fig.hbar(y='index', right='value',
                  left=0, height=0.4,
                  fill_color="color",
-                 source=data)
+                 source=data,
+                 name='value')
+
+    # Select specific tool for the plot
+    hover = bar_fig.select(dict(type=HoverTool))
+
+    # Choose, which glyphs are active by glyph name
+    hover.names = ["value"]
+    # Creating tooltips
+    hover.tooltips = [("Stake", "@value{( 0.00 )}")]
 
     grid = gridplot([[wedge_fig, bar_fig]])
     title = Div(text=title, style={'font-size': '200%'}, align='center')
