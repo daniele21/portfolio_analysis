@@ -175,13 +175,17 @@ def get_er(returns_df, periods_per_year):
     return er
 
 
-def get_cov(returns_dict):
-    returns_df = pd.DataFrame()
-    for x in returns_dict:
-        if len(returns_dict[x]) > 1:
-            returns_df = pd.concat((returns_df, returns_dict[x].to_frame(x)), axis=1)
-
+def get_cov(returns_df):
     cov = returns_df.dropna().cov()
     cov = cov.loc[returns_df.columns, returns_df.columns]
 
     return cov
+
+
+def get_df_from_dict(data_dict):
+    result_df = pd.DataFrame()
+    for x in data_dict:
+        if len(data_dict[x]) > 1:
+            result_df = pd.concat((result_df, data_dict[x].to_frame(x)), axis=1)
+
+    return result_df
