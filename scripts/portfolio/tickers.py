@@ -95,37 +95,32 @@ class Tickers:
 
         return
 
-    def get_tickers_df(self):
-        tickers_df = pd.DataFrame()
+    def get_tickers_dict(self,
+                         features: List = None,
+                         start_date: Text = None):
+        tickers_dict = {}
 
         for ticker in tqdm(self.tickers_dict):
             ticker_df = self.tickers_dict[ticker].data
-            if len(ticker_df) > 1:
-                tickers_df = tickers_df.merge(ticker_df['Close'].to_frame(ticker),
-                                              how='outer',
-                                              left_index=True,
-                                              right_index=True)
+            if len(ticker_df) > 1 and (features is None or (features is not None and ticker in features)):
+                tickers_dict[ticker] = ticker_df['Close'] if start_date is None else ticker_df[start_date:]['Close']
 
-        return tickers_df
+        return tickers_dict
 
-    def get_tickers_return_df(self,
-                              start_date: Text = None,
-                              features: List = None,
-                              freq: str = 'W'):
+    def get_tickers_return_dict(self,
+                                start_date: Text = None,
+                                features: List = None,
+                                freq: str = 'W'):
         # if freq not in ['W', 'M']:
         #     logger.warning(f' > Frequency is not W nor M')
 
-        tickers_df = self.get_tickers_df()
-        tickers_df = tickers_df[start_date:] if start_date is not None else tickers_df
+        tickers_dict = self.get_tickers_dict(features, start_date)
 
         returns_dict = {}
-        for ticker in tickers_df:
-            if features is None or (features is not None and ticker in features):
-                returns_dict[ticker] = tickers_df[ticker].pct_change(freq=freq)
+        for ticker in tickers_dict:
+            returns_dict[ticker] = tickers_dict[ticker].pct_change(freq=freq).dropna()
 
-        returns_df = pd.DataFrame(returns_dict)
-
-        return returns_df
+        return returns_dict
 
     def get_sharpe_ratios(self,
                           freq: str,
@@ -134,9 +129,9 @@ class Tickers:
                           start_date: Text = None,
                           risk_free_rate: float = RISK_FREE_RATE,
                           ):
-        return_df = self.get_tickers_return_df(start_date=start_date,
-                                               features=features,
-                                               freq=freq)
+        return_df = self.get_tickers_return_dict(start_date=start_date,
+                                                 features=features,
+                                                 freq=freq)
         sharpe_ratios = {}
 
         for ticker in return_df:
@@ -155,13 +150,15 @@ class Tickers:
                                start_date: Text = None,
                                weights=None,
                                ):
-        returns_df = self.get_tickers_return_df(start_date=start_date,
-                                                features=features,
-                                                freq=freq)
-        cov = get_cov(returns_df)
+        returns_dict = self.get_tickers_return_dict(start_date=start_date,
+                                                    features=features,
+                                                    freq=freq)
 
-        weights = np.repeat(1 / len(returns_df.columns), len(returns_df.columns)) if weights is None else weights
-        volatility = portfolio_vol(weights, cov.loc[returns_df.columns, returns_df.columns])
+        cov = get_cov(returns_dict)
+        tickers = cov.columns
+
+        weights = np.repeat(1 / len(tickers), len(tickers)) if weights is None else weights
+        volatility = portfolio_vol(weights, cov.loc[tickers, tickers])
 
         return volatility
 
