@@ -1,18 +1,19 @@
+import numpy as np
 import pandas as pd
 from bokeh.layouts import gridplot, column
 from bokeh.models import Tabs, ColumnDataSource, DateRangeSlider
 
+from core.operations.time_series import portfolio_return, portfolio_vol
+from core.portfolio.portfolio import Portfolio
+from core.portfolio.tickers import Tickers
 from scripts.constants.constants import INSTRUMENT_LIST, ETF, CRYPTO, STOCK
 from scripts.constants.tickers import ETF_TICKERS, STOCK_TICKERS, CRYPTO_TICKERS
-from scripts.portfolio.portfolio import Portfolio
-from scripts.portfolio.tickers import Tickers
-from scripts.portfolio_operations.operations import portfolio_return, portfolio_vol
 from scripts.visualization.info import plot_info_table
 from scripts.visualization.optimization import optimization_plot
 from scripts.visualization.panel import tab_figures
 from scripts.visualization.stake import stake_plot
 from scripts.visualization.trend import plot_stock_price, plot_ticker_volume, plot_performance
-import numpy as np
+
 
 class FinanceDashboard:
 
@@ -157,6 +158,3 @@ class FinanceDashboard:
         tabs = tab_figures(group_tabs)
 
         return tabs
-
-
-

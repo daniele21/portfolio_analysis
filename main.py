@@ -2,9 +2,9 @@ import argparse
 
 from bokeh.io import curdoc, output_file, save
 
-from scripts.paths import TICKER_DETAILS_PATH, TICKER_DATA_DIR, TRANSACTION_PATH
-from scripts.portfolio.portfolio import Portfolio
-from scripts.portfolio.tickers import Tickers
+from core.portfolio.portfolio import Portfolio
+from core.portfolio.tickers import Tickers
+from scripts.constants.paths import TICKER_DETAILS_PATH, TICKER_DATA_DIR, TRANSACTION_PATH
 from scripts.visualization.dashboard import FinanceDashboard
 from scripts.visualization.panel import tab_figures
 
@@ -24,10 +24,13 @@ def main(arguments):
         "Optimization": dashboard.portfolio_optimization()
     })
 
+    # Generate output html
     if arguments.output is not None:
         output_file(filename=arguments.output, title=title)
         save(fig)
         print(f' > Output saved at {arguments.output}')
+
+    # Running Server
     else:
         # curdoc().theme = 'dark_minimal'
         curdoc().add_root(fig)

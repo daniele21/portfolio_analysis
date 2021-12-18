@@ -2,12 +2,13 @@ import logging
 import os
 import re
 from typing import Text
+
 import pandas as pd
 
+from core.portfolio.ticker import Ticker
+from core.portfolio.tickers import Tickers
 from scripts.constants.constants import ETF, CRYPTO, STOCK
 from scripts.data.load import load_csv
-from scripts.portfolio.ticker import Ticker
-from scripts.portfolio.tickers import Tickers
 from scripts.utils.date import today
 
 logger = logging.getLogger('Portfolio')
@@ -138,14 +139,14 @@ class Portfolio:
 
         return ticker_performance
 
-    def get_ticker_performances(self,
-                                tickers: Tickers):
-        performances = pd.DataFrame()
-
-        for ticker_id in tickers.tickers_dict:
-            ticker_performance_df = self.get_ticker_performance(tickers.get_ticker(ticker_id))
-            performances = performances.merge(ticker_performance_df['performance'], right_index=True)
-            performances = performances.rename(columns={'performance': ticker_id})
+    # def get_ticker_performances(self,
+    #                             tickers: Tickers):
+    #     performances = pd.DataFrame()
+    #
+    #     for ticker_id in tickers.tickers_dict:
+    #         ticker_performance_df = self.get_ticker_performance(tickers.get_ticker(ticker_id))
+    #         performances = performances.merge(ticker_performance_df['performance'], right_index=True)
+    #         performances = performances.rename(columns={'performance': ticker_id})
 
     def get_ticker_transactions(self,
                                 ticker_id: Text):

@@ -4,9 +4,9 @@ from typing import Text
 
 import pandas as pd
 
+from scripts.constants.paths import TICKER_DATA_DIR, TICKER_DETAILS_PATH
 from scripts.data.check import check_ticker_existence
-from scripts.extraction.yahoo_extraction import extract_data
-from scripts.paths import TICKER_DATA_DIR, TICKER_DETAILS_PATH
+from scripts.data.yahoo_extraction import extract_data
 from scripts.utils.date import today
 
 logger = logging.getLogger('Update Data')

@@ -1,8 +1,9 @@
 import logging
 from typing import Text
+
 import pandas as pd
 
-from scripts.paths import TICKER_DETAILS_PATH
+from scripts.constants.paths import TICKER_DETAILS_PATH
 
 logger = logging.getLogger('Check')
 

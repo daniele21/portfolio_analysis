@@ -1,7 +1,7 @@
 import unittest
 
-from scripts.paths import TICKER_DATA_DIR, TICKER_DETAILS_PATH
-from scripts.portfolio.tickers import Tickers
+from core.portfolio.tickers import Tickers
+from scripts.constants.paths import TICKER_DATA_DIR, TICKER_DETAILS_PATH
 
 
 class TestTickers(unittest.TestCase):

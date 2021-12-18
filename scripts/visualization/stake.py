@@ -1,14 +1,14 @@
 from math import pi
 from typing import Dict, Text
 
-import numpy
+import pandas as pd
 from bokeh.layouts import gridplot, column
-from bokeh.models import HBar, Div, RadioButtonGroup, HoverTool
+from bokeh.models import Div, HoverTool
 from bokeh.palettes import Category20c
-from bokeh.plotting import figure, show
+from bokeh.plotting import figure
 from bokeh.transform import cumsum
 
-import pandas as pd
+from scripts.constants.constants import TOOLS
 
 HEIGHT = 500
 
@@ -21,7 +21,7 @@ def stake_plot(stake_dict: Dict,
     data['color'] = Category20c[len(stake_dict)] if len(stake_dict) > 2 else ['#3182bd', '#6baed6']
 
     bar_fig = figure(title='Bar Chart', toolbar_location=None,
-                     tools="hover", tooltips="@index: @value",
+                     tools=TOOLS, tooltips="@index: @value",
                      # x_range=(-0.5, 1.0),
                      y_range=data['index'],
                      height=HEIGHT

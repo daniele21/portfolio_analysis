@@ -7,13 +7,13 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+from core.operations.optimizations import get_efficient_frontier, msr, optimal_weights
+from core.operations.time_series import sharpe_ratio, get_df_from_dict, get_cov, portfolio_vol, annualized_rets, \
+    portfolio_return, get_er
+from core.portfolio.ticker import Ticker
 from scripts.constants.constants import RISK_FREE_RATE
 from scripts.data.load import load_csv
-from scripts.portfolio.ticker import Ticker
-from scripts.portfolio_operations.operations import sharpe_ratio, portfolio_vol, annualized_rets, portfolio_return, \
-    get_cov, get_er, get_df_from_dict
-from scripts.portfolio_operations.optimizations import optimal_weights, msr, get_efficient_frontier
-from scripts.portfolio_operations.utils import plot_ef
+from scripts.visualization.optimization import optimization_plot
 
 logger = logging.getLogger('Tickers')
 
@@ -212,11 +212,7 @@ class Tickers:
         ef, er, cov = self.get_efficient_frontier(n_points, freq, periods_per_year,
                                                   features, start_date)
 
-        plot_ef(ef['weights'], er, cov,
-                show_gmv=True,
-                show_ew=True,
-                show_cml=True,
-                riskfree_rate=RISK_FREE_RATE)
+        optimization_plot(ef, er, cov, title='Portfolio Optimization')
 
         return ef, er, cov
 

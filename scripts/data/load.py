@@ -5,7 +5,7 @@ from typing import Text
 import pandas
 import pandas as pd
 
-from scripts.paths import TICKER_DETAILS_PATH, TRANSACTION_PATH
+from scripts.constants.paths import TICKER_DETAILS_PATH, TRANSACTION_PATH
 
 logger = logging.getLogger('Load Data')
 

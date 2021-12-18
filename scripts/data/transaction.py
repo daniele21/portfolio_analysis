@@ -2,10 +2,11 @@ import logging
 import os
 import re
 from typing import Text
+
 import pandas as pd
 
+from scripts.constants.paths import TRANSACTION_PATH
 from scripts.data.check import check_ticker_existence
-from scripts.paths import TRANSACTION_PATH, TICKER_DATA_DIR, TICKER_DETAILS_PATH
 
 logger = logging.getLogger('Transaction')
 

@@ -6,12 +6,12 @@ from bokeh.models import HoverTool, ColumnDataSource
 from bokeh.palettes import Category20, YlGn
 from bokeh.plotting import figure
 
-from scripts.portfolio_operations.operations import portfolio_return, portfolio_vol
-from scripts.portfolio_operations.optimizations import msr, gmv
+from core.operations.optimizations import msr, gmv
+from core.operations.time_series import portfolio_return, portfolio_vol
+from scripts.constants.constants import TOOLS
 
 H_PLOT = 500
 W_PLOT = 1000
-TOOLS = 'pan,wheel_zoom,hover,reset'
 
 VBAR_WIDTH = 0.4
 RED = Category20[7][6]

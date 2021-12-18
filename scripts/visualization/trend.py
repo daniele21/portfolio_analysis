@@ -1,21 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
-from typing import Text, List, Dict
+from typing import Text, Dict
 
 import pandas as pd
+from bokeh.models import BooleanFilter, CDSView, HoverTool, Range1d, LinearAxis, DateRangeSlider
+from bokeh.models.formatters import NumeralTickFormatter
+from bokeh.palettes import Category20
 from bokeh.plotting import figure
 
-from bokeh.models import BooleanFilter, CDSView, HoverTool, Range1d, LinearAxis, Slider, ColumnDataSource, \
-    DateRangeSlider, DataRange1d
-from bokeh.palettes import Category20
-from bokeh.models.formatters import NumeralTickFormatter
-
 # Define constants
-from scripts.paths import TICKER_DATA_DIR
+from scripts.constants.constants import TOOLS
+from scripts.constants.paths import TICKER_DATA_DIR
 
 W_PLOT = 1300
 H_PLOT = 600
-TOOLS = 'pan,wheel_zoom,hover,reset'
 
 VBAR_WIDTH = 0.4
 RED = Category20[7][6]

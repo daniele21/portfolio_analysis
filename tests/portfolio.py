@@ -1,9 +1,9 @@
 import os
 import unittest
 
-from scripts.paths import TRANSACTION_PATH, TICKER_DETAILS_PATH, TICKER_DATA_DIR
-from scripts.portfolio.portfolio import Portfolio
-from scripts.portfolio.tickers import Tickers
+from core.portfolio.portfolio import Portfolio
+from core.portfolio.tickers import Tickers
+from scripts.constants.paths import TRANSACTION_PATH, TICKER_DETAILS_PATH, TICKER_DATA_DIR
 
 
 class TestPortfolio(unittest.TestCase):

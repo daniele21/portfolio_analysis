@@ -5,7 +5,7 @@ from typing import Text
 import pandas as pd
 
 from scripts.data.load import load_csv
-from scripts.extraction.yahoo_extraction import extract_data
+from scripts.data.yahoo_extraction import extract_data
 from scripts.portfolio.utils import check_date
 from scripts.utils.pandas_memory import pandas_series_to_float32
 
@@ -49,8 +49,6 @@ class Ticker:
         return data
 
     def _load_data(self, start_date):
-        # data = extract_data_from_yahoo(ticker=self.id,
-        #                                start_date=start_date)
         data = extract_data(ticker=self.id,
                             start_date=start_date)
         if data is not None:

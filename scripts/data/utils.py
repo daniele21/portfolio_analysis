@@ -1,9 +1,10 @@
 import os
 from typing import Text
-import pandas as pd
 
+import pandas as pd
 from scripts.config import BASE_DATE
-from scripts.paths import TICKER_DATA_DIR, TICKER_DETAILS_PATH
+
+from scripts.constants.paths import TICKER_DATA_DIR, TICKER_DETAILS_PATH
 
 
 def get_latest_date(ticker: Text):
