@@ -27,7 +27,6 @@ class Ticker:
         self.instrument = instrument
         self.risk = risk
         self.fee = fee
-
         self.path = f'{folder_dir}/{ticker_id}.csv'
         self.logger = logging.getLogger(f'{ticker_id}')
 

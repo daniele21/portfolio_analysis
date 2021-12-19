@@ -5,6 +5,7 @@ from bokeh.io import output_file, save
 from core.portfolio.portfolio import Portfolio
 from core.portfolio.tickers import Tickers
 from scripts.constants.paths import TICKER_DATA_DIR
+from scripts.utils.os_manager import ensure_folder
 from scripts.visualization.dashboard import FinanceDashboard
 from scripts.visualization.panel import tab_figures
 
@@ -14,6 +15,7 @@ def main(arguments):
 
     ticker_details_path = arguments.tickers
     transactions_path = arguments.transactions
+    ensure_folder(TICKER_DATA_DIR)
 
     tickers = Tickers(ticker_details_path, TICKER_DATA_DIR)
     portfolio = Portfolio(transactions_path)
