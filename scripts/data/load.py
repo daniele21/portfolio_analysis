@@ -50,14 +50,7 @@ def load_ticker_details(file_path: Text):
 def load_portfolio_transactions(file_path: Text):
     transactions = load_json(file_path)
 
-    transactions_dict = {'date': [],
-                         'ticker_id': [],
-                         'action': [],
-                         'quantity': [],
-                         'price': [],
-                         'commission': [],
-                         'gain': [],
-                         'deposit': []}
+    transactions_dict = {key: [] for key in list(transactions[0].keys())}
 
     for x in transactions:
         for key in x:

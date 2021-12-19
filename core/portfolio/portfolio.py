@@ -26,7 +26,7 @@ class Portfolio:
             return load_portfolio_transactions(self.transactions_path)
         else:
             return pd.DataFrame(columns=['date', 'ticker_id', 'action', 'quantity',
-                                         'price', 'commission', 'gain', 'deposit'])
+                                         'price', 'commission', 'gain', 'deposit', 'spent'])
 
     def add_transaction(self,
                         tickers: Tickers,

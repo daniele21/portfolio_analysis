@@ -7,6 +7,7 @@ import pandas as pd
 from scripts.data.load import load_csv
 from scripts.data.yahoo_extraction import extract_data
 from scripts.portfolio.utils import check_date
+from scripts.utils.date import yesterday
 from scripts.utils.pandas_memory import pandas_series_to_float32
 
 
@@ -70,11 +71,12 @@ class Ticker:
 
     def update_data(self):
         last_date = str((self.data.index.to_list()[-1]).date())
-        update_data = self._load_data(start_date=last_date)
+        if last_date != str(yesterday()):
+            update_data = self._load_data(start_date=last_date)
 
-        self.data = self.data.append(update_data)
+            self.data = self.data.append(update_data)
 
-        self.save()
+            self.save()
 
         return
 

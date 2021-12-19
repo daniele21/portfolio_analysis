@@ -1,6 +1,7 @@
 import datetime
 import time
 from typing import Text
+
 import pandas as pd
 
 
@@ -26,6 +27,10 @@ def readable_date():
 
 def today() -> Text:
     return datetime.date.today()
+
+
+def yesterday() -> Text:
+    return today() - datetime.timedelta(days=1)
 
 
 def parse_date(date_str: Text):

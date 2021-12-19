@@ -4,7 +4,7 @@ from bokeh.io import curdoc, output_file, save
 
 from core.portfolio.portfolio import Portfolio
 from core.portfolio.tickers import Tickers
-from scripts.constants.paths import TICKER_DETAILS_PATH, TICKER_DATA_DIR, TRANSACTION_PATH
+from scripts.constants.paths import TICKER_DATA_DIR
 from scripts.visualization.dashboard import FinanceDashboard
 from scripts.visualization.panel import tab_figures
 
@@ -12,15 +12,18 @@ from scripts.visualization.panel import tab_figures
 def main(arguments):
     title = 'Portfolio Analysis'
 
-    tickers = Tickers(TICKER_DETAILS_PATH, TICKER_DATA_DIR)
-    portfolio = Portfolio(TRANSACTION_PATH)
+    ticker_details_path = arguments.tickers
+    transactions_path = arguments.transactions
+
+    tickers = Tickers(ticker_details_path, TICKER_DATA_DIR)
+    portfolio = Portfolio(transactions_path)
     dashboard = FinanceDashboard(tickers, portfolio)
-    # tickers.update_tickers_data()
+    tickers.update_tickers_data()
 
     fig = tab_figures({
         'Stake': dashboard.stake_status_plot(),
-        'Performance': dashboard.ticker_performance_plot(),
         "History": dashboard.ticker_data_plot(),
+        'Performance': dashboard.ticker_performance_plot(),
         "Optimization": dashboard.portfolio_optimization()
     })
 
