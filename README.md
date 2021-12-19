@@ -16,6 +16,10 @@ Dependences:
 
 ------
 
+![Presentation](static/presentation.gif)
+
+------
+
 ## Contents
 
 - [Description & Goal](#description-&-goal)
@@ -114,23 +118,23 @@ This data are taken from **Yahoo Finance** and they include the following featur
 
 - It permits you to analyze the **overall stake** of the financial portfolio
 
-<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/1.stake_general.png width="500">
+[comment]: <> (<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/1.stake_general.png width="500">)
 
-[comment]: <> (![Stake example 1]&#40;https://raw.github.com/daniele21/portfolio_analysis/master/static/1.stake_general.png?raw=true&#41;)
+![Stake example 1](https://raw.github.com/daniele21/portfolio_analysis/master/static/1.stake_general.png?raw=true)
 
 - In a more specific use case it could be useful to analyze also the **stake relative to the instruments**
   of portfolio. Here is an example of the *stocks stake*.
 
-<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/2.stake_stock.png width="500">
+[comment]: <> (<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/2.stake_stock.png width="500">)
 
-[comment]: <> (![Stake example 1]&#40;https://raw.github.com/daniele21/portfolio_analysis/master/static/2.stake_stock.png?raw=true&#41;)
+![Stake example 1](https://raw.github.com/daniele21/portfolio_analysis/master/static/2.stake_stock.png?raw=true)
 
 - Furthermore, defining the risk in the ticker_details, it is possible to analyze the stack by risk
 represented by the securities. An example of a **risk stake** is the following one.
 
-<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/3.stake_risk.png width="500">
+[comment]: <> (<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/3.stake_risk.png width="500">)
 
-[comment]: <> (![Stake example 1]&#40;https://raw.github.com/daniele21/portfolio_analysis/master/static/3.stake_risk.png?raw=true&#41;)
+![Stake example 1](https://raw.github.com/daniele21/portfolio_analysis/master/static/3.stake_risk.png?raw=true)
 
 
 ### History Analysis
@@ -139,20 +143,20 @@ represented by the securities. An example of a **risk stake** is the following o
 It shows the candlestick and the volume plots.
 Here are two examples of the view for some tickers (in this case AIAI.MI and ADA-EUR).
 
-<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/4.history_aiai.png width="500">
+[comment]: <> (<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/4.history_aiai.png width="500">)
 
-[comment]: <> (![Stake example 1]&#40;https://raw.github.com/daniele21/portfolio_analysis/master/static/4.history_aiai.png.png?raw=true&#41;)
+![Stake example 1](https://raw.github.com/daniele21/portfolio_analysis/master/static/4.history_aiai.png.png?raw=true)
 
 
-<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/5.histort_ada.png width="500">
+[comment]: <> (<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/5.histort_ada.png width="500">)
 
-[comment]: <> (![Stake example 1]&#40;https://raw.github.com/daniele21/portfolio_analysis/master/static/5.histort_ada.png?raw=true&#41;)
+![Stake example 1](https://raw.github.com/daniele21/portfolio_analysis/master/static/5.histort_ada.png?raw=true)
 
 - It is possible to zoom, if the tool is active on the toolbar, as showed in the following example.
 
-<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/6.history_ada_zoom.png width="500">
+[comment]: <> (<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/6.history_ada_zoom.png width="500">)
 
-[comment]: <> (![Stake example 1]&#40;https://raw.github.com/daniele21/portfolio_analysis/master/static/6.history_ada_zoom.png?raw=true&#41;)
+![Stake example 1](https://raw.github.com/daniele21/portfolio_analysis/master/static/6.history_ada_zoom.png?raw=true)
 
 ### Performance Analysis
 
@@ -160,14 +164,14 @@ Here are two examples of the view for some tickers (in this case AIAI.MI and ADA
 The hover permit to understand the value of performance in each point of the plot.
 Here is an example with TSLA and AAPL.
 
-<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/7.performance-aapl.png width="500">
+[comment]: <> (<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/7.performance-aapl.png width="500">)
 
-[comment]: <> (![Stake example 1]&#40;https://raw.github.com/daniele21/portfolio_analysis/master/static/7.performance-aapl.png?raw=true&#41;)
+![Stake example 1](https://raw.github.com/daniele21/portfolio_analysis/master/static/7.performance-aapl.png?raw=true)
 
 
-<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/8.performance-tsla.png width="500">
+[comment]: <> (<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/8.performance-tsla.png width="500">)
 
-[comment]: <> (![Stake example 1]&#40;https://raw.github.com/daniele21/portfolio_analysis/master/static/8.performance-tsla.png?raw=true&#41;)
+![Stake example 1](https://raw.github.com/daniele21/portfolio_analysis/master/static/8.performance-tsla.png?raw=true)
 
 
 ### Optimization Analysis
@@ -176,14 +180,14 @@ It permits analyzing the suggested portfolio optimization.
 There are both optimizations for each financial categories and with all securities in the ticker_details.json.
 Here are two example of portfolio optimization for **all** securities and for **stock** securities.
 
-<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/9.optimization-all.png width="500">
+[comment]: <> (<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/9.optimization-all.png width="500">)
 
-[comment]: <> (![Stake example 1]&#40;https://raw.github.com/daniele21/portfolio_analysis/master/static/9.optimization-all.png?raw=true&#41;)
+![Stake example 1](https://raw.github.com/daniele21/portfolio_analysis/master/static/9.optimization-all.png?raw=true)
 
 
-<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/10.optimization-stock width="500">
+[comment]: <> (<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/10.optimization-stock width="500">)
 
-[comment]: <> (![Stake example 1]&#40;https://raw.github.com/daniele21/portfolio_analysis/master/static/10.optimization-stock?raw=true&#41;)
+![Stake example 1](https://raw.github.com/daniele21/portfolio_analysis/master/static/10.optimization-stock?raw=true)
 
 
 --------
