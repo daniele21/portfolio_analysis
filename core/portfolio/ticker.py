@@ -6,8 +6,7 @@ import pandas as pd
 
 from scripts.data.load import load_csv
 from scripts.data.yahoo_extraction import extract_data
-from scripts.portfolio.utils import check_date
-from scripts.utils.date import yesterday
+from scripts.utils.date import yesterday, check_date
 from scripts.utils.pandas_memory import pandas_series_to_float32
 
 

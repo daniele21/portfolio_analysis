@@ -1,4 +1,5 @@
 import datetime
+import re
 import time
 from typing import Text
 
@@ -36,3 +37,13 @@ def yesterday() -> Text:
 def parse_date(date_str: Text):
     date_format = '%Y-%m-%d'
     return datetime.datetime.strptime(date_str, date_format)
+
+
+def check_date(date: Text):
+    date_match = re.match(r'^(\d{4})-(\d{2})-(\d{2})', date)
+    if not date_match:
+        error = f' > No valid date format. Give YYYY-MM-DD'
+        print(error)
+        return False
+    else:
+        return True

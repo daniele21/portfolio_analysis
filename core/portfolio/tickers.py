@@ -85,7 +85,7 @@ class Tickers:
 
     def update_tickers_data(self):
         thread_list = []
-        for ticker_id in self.tickers_dict:
+        for ticker_id in tqdm(self.tickers_dict, desc='Updating History Data'):
             ticker = self.tickers_dict[ticker_id]
             thread = Thread(target=ticker.update_data)
             thread.start()
@@ -101,7 +101,7 @@ class Tickers:
                          start_date: Text = None):
         tickers_dict = {}
 
-        for ticker in tqdm(self.tickers_dict):
+        for ticker in self.tickers_dict:
             ticker_df = self.tickers_dict[ticker].data
             if len(ticker_df) > 1 and (features is None or (features is not None and ticker in features)):
                 tickers_dict[ticker] = ticker_df['Close'] if start_date is None else ticker_df[start_date:]['Close']
