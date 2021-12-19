@@ -12,7 +12,7 @@ from core.operations.time_series import sharpe_ratio, get_df_from_dict, get_cov,
     portfolio_return, get_er
 from core.portfolio.ticker import Ticker
 from scripts.constants.constants import RISK_FREE_RATE
-from scripts.data.load import load_csv
+from scripts.data.load import load_ticker_details
 from scripts.visualization.optimization import optimization_plot
 
 logger = logging.getLogger('Tickers')
@@ -26,7 +26,7 @@ class Tickers:
         self.ticker_details_path = ticker_details_path
         self.ticker_data_folder = ticker_data_folder
 
-        self.ticker_details_df = load_csv(ticker_details_path)
+        self.ticker_details_df = load_ticker_details(ticker_details_path)
         self.tickers_dict = {}
 
         self._init_data()

@@ -8,7 +8,7 @@ import pandas as pd
 from core.portfolio.ticker import Ticker
 from core.portfolio.tickers import Tickers
 from scripts.constants.constants import ETF, CRYPTO, STOCK
-from scripts.data.load import load_csv
+from scripts.data.load import load_portfolio_transactions
 from scripts.utils.date import today
 
 logger = logging.getLogger('Portfolio')
@@ -23,7 +23,7 @@ class Portfolio:
 
     def _init_transactions(self):
         if os.path.exists(self.transactions_path):
-            return load_csv(self.transactions_path)
+            return load_portfolio_transactions(self.transactions_path)
         else:
             return pd.DataFrame(columns=['date', 'ticker_id', 'action', 'quantity',
                                          'price', 'commission', 'gain', 'deposit'])

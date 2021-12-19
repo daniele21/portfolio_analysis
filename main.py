@@ -40,6 +40,8 @@ def main(arguments):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('-d', '--tickers', help='Tickers detail filepath')
+    parser.add_argument('-t', '--transactions', help='Transactions csv filepath')
     parser.add_argument('-o', '--output', help='Output file')
 
     args = parser.parse_args()
