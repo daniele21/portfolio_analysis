@@ -1,0 +1,83 @@
+[
+  {
+    "ticker_id": "AIAI.MI",
+    "ticker_name": "L&G Artificial Intelligence UCITS ETF",
+    "isin":"IE00BK5BCD43",
+    "instrument": "ETF",
+    "risk": 6,
+    "fee": 0.49
+  },
+  {
+    "ticker_id": "AAPL",
+    "ticker_name": "Apple Inc.",
+    "isin":"US0378331005",
+    "instrument": "Stock",
+    "risk": 7,
+    "fee": 0.00
+  },
+  {
+    "ticker_id": "AMZN",
+    "ticker_name": "Amazon.com Inc.",
+    "isin":"US0231351067",
+    "instrument": "Stock",
+    "risk": 7,
+    "fee": 0.0
+  },
+  {
+    "ticker_id": "USPY.DE",
+    "ticker_name": "L&G Cyber Security UCITS ETF",
+    "isin":"IE00BYPLS672",
+    "instrument": "ETF",
+    "risk": 6,
+    "fee": 0.69
+  },
+  {
+    "ticker_id": "TSLA",
+    "ticker_name": "Tesla Inc.",
+    "isin":"US88160R1014",
+    "instrument": "Stock",
+    "risk": 7,
+    "fee": 0
+  },
+  {
+    "ticker_id": "SRIC3.MI",
+    "ticker_name": "BNP Paribas Easy - Euro Corporate Bond SRI Fossil Free 1-3 Year UCITS ETF",
+    "isin":" FR0010754127",
+    "instrument": "Bond",
+    "risk": 3,
+    "fee": 0.2
+  },
+  {
+    "ticker_id": "CI3.PA",
+    "ticker_name": "Amundi ETF Euro Inflation UCITS ETF",
+    "isin":"FR0010754127",
+    "instrument": "Bond",
+    "risk": 3,
+    "fee": 0.16
+  },
+  {
+    "ticker_id": "ADA-EUR",
+    "ticker_name": "Cardano",
+    "isin": null,
+    "instrument": "Crypto",
+    "risk": 7,
+    "fee": 0.0
+  },
+  {
+    "ticker_id": "BTC-EUR",
+    "ticker_name": "Bitcoin",
+    "isin": null,
+    "instrument": "Crypto",
+    "risk": 7,
+    "fee": 0.0
+  },
+  {
+    "ticker_id": "ETH-EUR",
+    "ticker_name": "Ethereum",
+    "isin": null,
+    "instrument": "Crypto",
+    "risk": 7,
+    "fee": 0.0
+  }
+
+]

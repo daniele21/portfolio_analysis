@@ -1,0 +1,132 @@
+[
+  {
+    "date": "2021-04-23",
+    "ticker_id": "AIAI.MI",
+    "action": "buy",
+    "quantity": 5.0,
+    "price": 14.974,
+    "commission": 2.02,
+    "gain": null,
+    "spent": 76.89
+  },
+  {
+    "date": "2021-04-23",
+    "ticker_id": "AAPL",
+    "action": "buy",
+    "quantity": 8.0,
+    "price": 120.13,
+    "commission": 0.0,
+    "gain": null,
+    "spent": 960.00
+  },
+  {
+    "date": "2021-04-23",
+    "ticker_id": "AMZN",
+    "action": "buy",
+    "quantity": 1.0,
+    "price": 2977.54,
+    "commission": 2.04,
+    "gain": null,
+    "spent": 2978.58
+  },
+  {
+    "date": "2021-07-08",
+    "ticker_id": "USPY.DE",
+    "action": "buy",
+    "quantity": 5.0,
+    "price": 21.765,
+    "commission": 2.03,
+    "gain": null,
+    "spent": 110.855
+  },
+  {
+    "date": "2021-09-06",
+    "ticker_id": "TSLA",
+    "action": "buy",
+    "quantity": 1.0,
+    "price": 623.4,
+    "commission": 4.31,
+    "gain": null,
+    "spent": 627.7099999999999
+  },
+  {
+    "date": "2021-09-21",
+    "ticker_id": "ADA-EUR",
+    "action": "buy",
+    "quantity": 306.48,
+    "price": 2.11,
+    "commission": 0.0,
+    "gain": null,
+    "spent": 646.6728
+  },
+  {
+    "date": "2021-09-10",
+    "ticker_id": "BTC-EUR",
+    "action": "buy",
+    "quantity": 0.00262,
+    "price": 39000.0,
+    "commission": 0.0,
+    "gain": null,
+    "spent": 102.18
+  },
+  {
+    "date": "2021-09-10",
+    "ticker_id": "ETH-EUR",
+    "action": "buy",
+    "quantity": 0.08268,
+    "price": 2935.0,
+    "commission": 0.0,
+    "gain": null,
+    "spent": 242.6658
+  },
+  {
+    "date": "2021-11-16",
+    "ticker_id": "BTC-EUR",
+    "action": "buy",
+    "quantity": 0.0026892,
+    "price": 52700.0,
+    "commission": 8.28,
+    "gain": null,
+    "spent": 150.00084
+  },
+  {
+    "date": "2021-11-16",
+    "ticker_id": "ETH-EUR",
+    "action": "buy",
+    "quantity": 0.0379,
+    "price": 3719.0,
+    "commission": 9.05,
+    "gain": null,
+    "spent": 150.00010000000003
+  },
+  {
+    "date": "2021-11-19",
+    "ticker_id": "ADA-EUR",
+    "action": "buy",
+    "quantity": 89.35,
+    "price": 1.59,
+    "commission": 8.0,
+    "gain": null,
+    "spent": 150.0
+  },
+  {
+    "date": "2021-03-01",
+    "ticker_id": "CI3.PA",
+    "action": "buy",
+    "quantity": 5,
+    "price": 234.53,
+    "commission": 8.0,
+    "gain": null,
+    "spent": 1178.0
+  },
+  {
+    "date": "2021-03-01",
+    "ticker_id": "SRIC3.MI",
+    "action": "buy",
+    "quantity": 50,
+    "price": 10.07,
+    "commission": 8.0,
+    "gain": null,
+    "spent": 508.00
+  }
+]
