@@ -22,7 +22,7 @@ Dependences:
 
 ## Contents
 
-- [Description & Goal](#description-&-goal)
+- [Description & Goal](#description-and-goal)
 - [Dataset](#dataset)
 - [Features](#features)
     - [Stake Analysis](#stake-analysis)
@@ -35,7 +35,7 @@ Dependences:
 
 ---------
 
-## Description & Goal
+## Description and Goal
 
 This project born from the need to **analyze your own financial portfolio**, in order to make you well understand which are your
 next decision for the future investments.
@@ -118,23 +118,19 @@ This data are taken from **Yahoo Finance** and they include the following featur
 
 - It permits you to analyze the **overall stake** of the financial portfolio
 
-[comment]: <> (<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/1.stake_general.png width="500">)
+<img src=/static/1.stake_general.png width="500">
 
-![Stake example 1](https://raw.github.com/daniele21/portfolio_analysis/master/static/1.stake_general.png?raw=true)
 
 - In a more specific use case it could be useful to analyze also the **stake relative to the instruments**
   of portfolio. Here is an example of the *stocks stake*.
 
-[comment]: <> (<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/2.stake_stock.png width="500">)
+<img src=/static/2.stake_stock.png width="500">
 
-![Stake example 1](https://raw.github.com/daniele21/portfolio_analysis/master/static/2.stake_stock.png?raw=true)
 
 - Furthermore, defining the risk in the ticker_details, it is possible to analyze the stack by risk
 represented by the securities. An example of a **risk stake** is the following one.
 
-[comment]: <> (<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/3.stake_risk.png width="500">)
-
-![Stake example 1](https://raw.github.com/daniele21/portfolio_analysis/master/static/3.stake_risk.png?raw=true)
+<img src=/static/3.stake_risk.png width="500">
 
 
 ### History Analysis
@@ -143,20 +139,17 @@ represented by the securities. An example of a **risk stake** is the following o
 It shows the candlestick and the volume plots.
 Here are two examples of the view for some tickers (in this case AIAI.MI and ADA-EUR).
 
-[comment]: <> (<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/4.history_aiai.png width="500">)
-
-![Stake example 1](https://raw.github.com/daniele21/portfolio_analysis/master/static/4.history_aiai.png.png?raw=true)
+<img src=/static/4.history_aiai.png width="500">
 
 
-[comment]: <> (<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/5.histort_ada.png width="500">)
 
-![Stake example 1](https://raw.github.com/daniele21/portfolio_analysis/master/static/5.histort_ada.png?raw=true)
+<img src=/static/5.histort_ada.png width="500">
+
 
 - It is possible to zoom, if the tool is active on the toolbar, as showed in the following example.
 
-[comment]: <> (<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/6.history_ada_zoom.png width="500">)
+<img src=/static/6.history_ada_zoom.png width="500">
 
-![Stake example 1](https://raw.github.com/daniele21/portfolio_analysis/master/static/6.history_ada_zoom.png?raw=true)
 
 ### Performance Analysis
 
@@ -164,14 +157,12 @@ Here are two examples of the view for some tickers (in this case AIAI.MI and ADA
 The hover permit to understand the value of performance in each point of the plot.
 Here is an example with TSLA and AAPL.
 
-[comment]: <> (<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/7.performance-aapl.png width="500">)
-
-![Stake example 1](https://raw.github.com/daniele21/portfolio_analysis/master/static/7.performance-aapl.png?raw=true)
+<img src=/static/7.performance-aapl.png width="500">
 
 
-[comment]: <> (<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/8.performance-tsla.png width="500">)
 
-![Stake example 1](https://raw.github.com/daniele21/portfolio_analysis/master/static/8.performance-tsla.png?raw=true)
+<img src=/static/8.performance-tsla.png width="500">
+
 
 
 ### Optimization Analysis
@@ -180,14 +171,12 @@ It permits analyzing the suggested portfolio optimization.
 There are both optimizations for each financial categories and with all securities in the ticker_details.json.
 Here are two example of portfolio optimization for **all** securities and for **stock** securities.
 
-[comment]: <> (<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/9.optimization-all.png width="500">)
-
-![Stake example 1](https://raw.github.com/daniele21/portfolio_analysis/master/static/9.optimization-all.png?raw=true)
+<img src=/static/9.optimization-all.png width="500">
 
 
-[comment]: <> (<img src=/Users/daniele/Documents/Training/src/portfolio_analysis/static/10.optimization-stock width="500">)
 
-![Stake example 1](https://raw.github.com/daniele21/portfolio_analysis/master/static/10.optimization-stock?raw=true)
+<img src=/static/10.optimization-stock width="500">
+
 
 
 --------
