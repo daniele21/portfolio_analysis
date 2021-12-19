@@ -6,8 +6,6 @@ from bokeh.models import Tabs, ColumnDataSource, DateRangeSlider
 from core.operations.time_series import portfolio_return, portfolio_vol
 from core.portfolio.portfolio import Portfolio
 from core.portfolio.tickers import Tickers
-from scripts.constants.constants import INSTRUMENT_LIST, ETF, CRYPTO, STOCK
-from scripts.constants.tickers import ETF_TICKERS, STOCK_TICKERS, CRYPTO_TICKERS
 from scripts.visualization.info import plot_info_table
 from scripts.visualization.optimization import optimization_plot
 from scripts.visualization.panel import tab_figures
@@ -109,7 +107,7 @@ class FinanceDashboard:
         stake = self.portfolio.get_actual_stake(self.tickers)
         instrument_stake['General'] = stake
 
-        for instr in INSTRUMENT_LIST:
+        for instr in self.tickers.instruments:
             instr_stake = self.portfolio.get_actual_stake_by_instrument(instrument=instr,
                                                                         tickers=self.tickers)
             instrument_stake[instr] = instr_stake
@@ -127,10 +125,8 @@ class FinanceDashboard:
         return tabs
 
     def portfolio_optimization(self):
-        ticker_group = {'All': None,
-                        ETF: ETF_TICKERS,
-                        CRYPTO: CRYPTO_TICKERS,
-                        STOCK: STOCK_TICKERS}
+        ticker_group = {'All': None}
+        ticker_group.update({instr: self.tickers.ticker_by_instr[instr] for instr in self.tickers.instruments})
         group_tabs = {}
 
         for group in ticker_group:

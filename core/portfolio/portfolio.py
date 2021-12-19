@@ -7,7 +7,6 @@ import pandas as pd
 
 from core.portfolio.ticker import Ticker
 from core.portfolio.tickers import Tickers
-from scripts.constants.constants import ETF, CRYPTO, STOCK
 from scripts.data.load import load_portfolio_transactions
 from scripts.utils.date import today
 
@@ -157,9 +156,7 @@ class Portfolio:
                          tickers: Tickers):
         df = tickers.ticker_details_df[['ticker_id', 'instrument']]
         amount_spent = self.get_amount_spent()
-        ticker_stake = {ETF: 0,
-                        CRYPTO: 0,
-                        STOCK: 0}
+        ticker_stake = {x: 0.0 for x in tickers.instruments}
 
         for i, row in df.iterrows():
             ticker_id, instrument = row['ticker_id'], row['instrument']

@@ -30,6 +30,7 @@ class Tickers:
         self.tickers_dict = {}
 
         self._init_data()
+        self.instruments, self.ticker_by_instr = self._init_instruments()
 
     def _init_data(self):
         ticker_list = self.ticker_details_df['ticker_id'].to_list()
@@ -47,6 +48,18 @@ class Tickers:
                             )
 
             self.tickers_dict[ticker_id] = ticker
+
+    def _init_instruments(self):
+        instruments = set()
+
+        for ticker_obj in self.tickers_dict.values():
+            instruments.add(ticker_obj.instrument)
+
+        ticker_by_instr = {x: [] for x in instruments}
+        for ticker, ticker_obj in self.tickers_dict.items():
+            ticker_by_instr[ticker_obj.instrument].append(ticker)
+
+        return instruments, ticker_by_instr
 
     def add_ticker(self,
                    ticker_id: Text,
@@ -280,7 +293,7 @@ class Tickers:
 
     def get_tickers_by_instrument(self,
                                   instrument: Text):
-        assert instrument in ['ETF', 'Crypto', 'Stock'], f' > No valid instrument: {instrument}'
+        assert instrument in self.instruments, f' > No valid instrument: {instrument}'
         instrument_df = self.ticker_details_df[self.ticker_details_df['instrument'] == instrument]
 
         return instrument_df

@@ -22,10 +22,10 @@ class Ticker:
                  fee: float = None):
         self.id = ticker_id
 
-        self.name = name,
-        self.isin = isin,
-        self.instrument = instrument,
-        self.risk = risk,
+        self.name = name
+        self.isin = isin
+        self.instrument = instrument
+        self.risk = risk
         self.fee = fee
 
         self.path = f'{folder_dir}/{ticker_id}.csv'
@@ -74,6 +74,7 @@ class Ticker:
             update_data = self._load_data(start_date=last_date)
 
             self.data = self.data.append(update_data)
+            self.data = self.data.drop(self.data[self.data.duplicated()].index)
 
             self.save()
 
