@@ -16,7 +16,8 @@ Dependences:
 
 ------
 
-![Presentation](static/presentation.gif)
+
+<img src=/static/presentation.gif width="800">
 
 ------
 
@@ -175,7 +176,7 @@ Here are two example of portfolio optimization for **all** securities and for **
 
 
 
-<img src=/static/10.optimization-stock width="500">
+<img src=/static/10.optimization-stock.png width="500">
 
 
 
