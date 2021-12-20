@@ -19,7 +19,7 @@ Dependences:
 
 <img src=/static/presentation.gif width="800">
 
-Try the test example here: [portfolio_analysis.html](/outputs/portfolio_analysis.html)
+Try the test example here: [portfolio_analysis](https://daniele21.github.io/portfolio_analysis/)
 
 ------
 
