@@ -18,7 +18,15 @@ def stake_plot(stake_dict: Dict,
     data = pd.Series(stake_dict).reset_index(name='value')
     data = data.sort_values(by='value', ascending=True)
     data['angle'] = data['value'] * 2 * pi
-    data['color'] = Category20c[len(stake_dict)] if len(stake_dict) > 2 else ['#3182bd', '#6baed6']
+
+    # define color
+
+    if len(stake_dict) == 1:
+        data['color'] = ['#3182bd']
+    elif len(stake_dict) == 2:
+        data['color'] = ['#3182bd', '#6baed6']
+    else:
+        data['color'] = Category20c[len(stake_dict)]
 
     bar_fig = figure(title='Bar Chart', toolbar_location=None,
                      tools=TOOLS, tooltips="@index: @value",
