@@ -1,4 +1,4 @@
-DATA_DIR = 'resources/db'
+DATA_DIR = 'resources'
 OUTPUT_DIR = 'output'
 
 # TRANSACTION_PATH = f'{DATA_DIR}/transactions.csv'
