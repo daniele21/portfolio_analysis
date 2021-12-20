@@ -19,6 +19,8 @@ Dependences:
 
 <img src=/static/presentation.gif width="800">
 
+Try the test example here: [portfolio_analysis.html](/outputs/portfolio_analysis.html)
+
 ------
 
 ## Contents
