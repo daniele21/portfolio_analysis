@@ -16,11 +16,11 @@ def extract_data(ticker: Text,
 
     if end_date is None:
         end_date = str(yesterday())
+        end_datetime = datetime.datetime.strptime(end_date, date_format)
 
-    end_datetime = datetime.datetime.strptime(end_date, date_format)
-    start_datetime = datetime.datetime.strptime(start_date, date_format)
-
-    end_date = end_date if end_datetime > start_datetime else None
+        if start_date is not None:
+            start_datetime = datetime.datetime.strptime(start_date, date_format)
+            end_date = end_date if end_datetime > start_datetime else None
 
     data = pdr.get_data_yahoo(ticker,
                               start=start_date,
