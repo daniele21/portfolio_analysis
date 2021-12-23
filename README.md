@@ -1,6 +1,5 @@
 # Portfolio Analysis 
-![Version](https://img.shields.io/badge/Version-v1.0-405a85)
-
+![Version](https://img.shields.io/badge/Version-v1.1-405a85)
 
 ![Licence](https://img.shields.io/badge/Licence-MIT-c97520)
 
@@ -193,10 +192,15 @@ Here are two example of portfolio optimization for **all** securities and for **
 - [x] Ticker history data
 - [x] Portfolio Optimization (**Markowitz model**)
 
+*Version 1.1*
+
+- [x] Fix bugs
+- [x] Entire Portfolio performance
+- [x] Performance for each instrument of investment
+
 *Version 2.0*
 
-
-- [ ] Better UI 
+- [ ] Better UI
 - [ ] File management from UI
 - [ ] Portfolio Optimization (**RL algorithm**)
 
@@ -219,8 +223,8 @@ Here are two example of portfolio optimization for **all** securities and for **
 
 ## Contribution
 
-If you want to contribute in this project for the next release, feel free to contact me.
-You find my contact at the 'contact' section in my [portfolio](https://daniele21.github.io).
+If you want to contribute in this project for the next release, feel free to contact me. You find my contact at the **
+contact** section in my [portfolio](https://daniele21.github.io).
 
 I need someone who can help me in:
 
