@@ -61,10 +61,6 @@ def plot_stock_price(stock,
            source=stock, view=view_dec, name="price")
     p.line(x='index', y='Close', color=BLUE, source=stock)
 
-    p.legend.location = "top_left"
-    p.legend.border_line_alpha = 0
-    p.legend.background_fill_alpha = 0
-    p.legend.click_policy = "mute"
 
     p.yaxis.formatter = NumeralTickFormatter(format='€ 0,0[.]00')
     p.x_range.range_padding = 0.05
@@ -110,10 +106,6 @@ def plot_performance(stock,
     p.line(x='index', y='performance', color=BLUE, source=stock, name='performance')
     p.line(x='index', y=0, color=BLUE_LIGHT, source=stock)
 
-    p.legend.location = "top_left"
-    p.legend.border_line_alpha = 0
-    p.legend.background_fill_alpha = 0
-    p.legend.click_policy = "mute"
 
     p.yaxis.formatter = NumeralTickFormatter(format='€ 0,0[.]00')
     p.x_range.range_padding = 0.05
@@ -160,10 +152,6 @@ def plot_performances(stock_dict: Dict,
         p.line(x='index', y='performance', source=stock, name=ticker_id)
     p.line(x='index', y=0, color=BLUE_LIGHT, source=stock_0)
 
-    p.legend.location = "top_left"
-    p.legend.border_line_alpha = 0
-    p.legend.background_fill_alpha = 0
-    p.legend.click_policy = "mute"
 
     p.yaxis.formatter = NumeralTickFormatter(format='0,0[.]00')
     p.x_range.range_padding = 0.05
@@ -208,10 +196,6 @@ def plot_ticker_volume(stock,
     p.vbar(x='index', width=VBAR_WIDTH, top='Volume', fill_color=BLUE, line_color=BLUE,
            source=stock, name="volume")
 
-    p.legend.location = "top_left"
-    p.legend.border_line_alpha = 0
-    p.legend.background_fill_alpha = 0
-    p.legend.click_policy = "mute"
 
     p.yaxis.formatter = NumeralTickFormatter(format='€ 0,0[.]00')
     p.x_range.range_padding = 0.05
@@ -275,10 +259,6 @@ def plot_stock(stock):
     p.vbar(x='index', width=VBAR_WIDTH, top='Volume', fill_color=BLUE, line_color=BLUE,
            source=stock, name="volume", y_range_name="y_volume")
 
-    p.legend.location = "top_left"
-    p.legend.border_line_alpha = 0
-    p.legend.background_fill_alpha = 0
-    p.legend.click_policy = "mute"
 
     p.yaxis.formatter = NumeralTickFormatter(format='€ 0,0[.]00')
     p.x_range.range_padding = 0.05
