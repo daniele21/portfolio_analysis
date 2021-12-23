@@ -3,12 +3,13 @@ import unittest
 
 from core.portfolio.portfolio import Portfolio
 from core.portfolio.tickers import Tickers
-from scripts.constants.paths import TRANSACTION_PATH, TICKER_DETAILS_PATH, TICKER_DATA_DIR
+from scripts.constants.paths import TRANSACTION_PATH, TICKER_DETAILS_PATH, TICKER_DATA_DIR, TRANSACTION_JSON_PATH, \
+    TICKER_DETAILS_JSON_PATH
 
 
 class TestPortfolio(unittest.TestCase):
     os.chdir('../')
-    tickers = Tickers(TICKER_DETAILS_PATH, TICKER_DATA_DIR)
+    tickers = Tickers(TICKER_DETAILS_JSON_PATH, TICKER_DATA_DIR)
     portfolio = Portfolio(TRANSACTION_PATH)
 
     def test_init_portfolio(self):
@@ -79,8 +80,20 @@ class TestPortfolio(unittest.TestCase):
         return
 
     def test_ticker_performances(self):
-        portfolio = Portfolio(TRANSACTION_PATH)
+        portfolio = Portfolio(TRANSACTION_JSON_PATH)
         portfolio.get_ticker_performances(tickers=self.tickers)
+
+    def test_performance_portfolio(self):
+        portfolio = Portfolio(TRANSACTION_JSON_PATH)
+        performance = portfolio.get_portfolio_performance(self.tickers)
+
+        self.assertIsNotNone(performance)
+
+    def test_group_performance(self):
+        portfolio = Portfolio(TRANSACTION_JSON_PATH)
+        performance = portfolio.get_group_performances(self.tickers)
+
+        self.assertIsNotNone(performance)
 
 
 if __name__ == '__main__':
