@@ -38,6 +38,9 @@ class Ticker:
             data = load_csv(self.path)
         else:
             data = self._load_data(start_date=None)
+            if data is None:
+                return None
+
             self.logger.info(f' > Saving ticker data at {self.path}')
             data.to_csv(self.path)
 
@@ -50,10 +53,7 @@ class Ticker:
     def _load_data(self, start_date):
         data = extract_data(ticker=self.id,
                             start_date=start_date)
-        if data is not None:
-            return data
-        else:
-            return data
+        return data
 
     def get_data_from_date(self,
                            start_date: Text,
@@ -62,8 +62,10 @@ class Ticker:
         if not check:
             return None
 
-        data = self.data.set_index('Date')
-        filter_df = data[start_date: end_date]
+        data = self.data.set_index('Date') if 'Date' in self.data.columns else self.data
+        filter_df = data[start_date: end_date].reset_index()
+        filter_df = filter_df.drop(filter_df[filter_df.duplicated()].index)
+        filter_df = filter_df.set_index('Date') if 'Date' in filter_df.columns else filter_df
 
         return filter_df
 

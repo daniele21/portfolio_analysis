@@ -8,8 +8,8 @@ PERFORMANCE_REPORT_DIR = f'{OUTPUT_DIR}/performance'
 
 TICKER_DATA_DIR = 'resources/tickers'
 TICKER_DETAILS_PATH = f'{TICKER_DATA_DIR}/tickers_details.csv'
-TICKER_DETAILS_JSON_PATH = f'resources/tickers.json'
+TICKER_DETAILS_JSON_PATH = f'resources/my_tickers.json'
 
 TRANSACTION_PATH = 'resources/portfolio/transactions.csv'
-TRANSACTION_JSON_PATH = 'resources/transactions.json'
+TRANSACTION_JSON_PATH = 'resources/my_transactions.json'
 

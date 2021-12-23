@@ -46,8 +46,8 @@ class Tickers:
                             risk=ticker_detail_dict['risk'][i],
                             fee=ticker_detail_dict['fee'][i],
                             )
-
-            self.tickers_dict[ticker_id] = ticker
+            if ticker.data is not None:
+                self.tickers_dict[ticker_id] = ticker
 
     def _init_instruments(self):
         instruments = set()
@@ -295,8 +295,9 @@ class Tickers:
                                   instrument: Text):
         assert instrument in self.instruments, f' > No valid instrument: {instrument}'
         instrument_df = self.ticker_details_df[self.ticker_details_df['instrument'] == instrument]
+        instrument_list = [x for x in instrument_df['ticker_id'].to_list() if x in self.tickers_dict]
 
-        return instrument_df
+        return instrument_list
 
     def save_details(self):
         self.ticker_details_df.to_csv(self.ticker_details_path)

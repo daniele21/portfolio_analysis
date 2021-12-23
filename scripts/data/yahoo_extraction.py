@@ -22,7 +22,12 @@ def extract_data(ticker: Text,
             start_datetime = datetime.datetime.strptime(start_date, date_format)
             end_date = end_date if end_datetime > start_datetime else None
 
-    data = pdr.get_data_yahoo(ticker,
-                              start=start_date,
-                              end=end_date)
+    try:
+        data = pdr.get_data_yahoo(ticker,
+                                  start=start_date,
+                                  end=end_date)
+    except KeyError as e:
+        logger.warning(f' > It was not possible to load the data for {ticker}')
+        data = None
+
     return data
