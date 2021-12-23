@@ -1,4 +1,3 @@
-import logging
 import os
 from typing import Text
 
@@ -7,6 +6,7 @@ import pandas as pd
 from scripts.data.load import load_csv
 from scripts.data.yahoo_extraction import extract_data
 from scripts.utils.date import yesterday, check_date
+from scripts.utils.logging import setup_logger
 from scripts.utils.pandas_memory import pandas_series_to_float32
 
 
@@ -28,7 +28,7 @@ class Ticker:
         self.risk = risk
         self.fee = fee
         self.path = f'{folder_dir}/{ticker_id}.csv'
-        self.logger = logging.getLogger(f'{ticker_id}')
+        self.logger = setup_logger(f'{ticker_id}')
 
         self.data = self._init_data()
 

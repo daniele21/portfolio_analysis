@@ -5,9 +5,12 @@ from bokeh.io import output_file, save
 from core.portfolio.portfolio import Portfolio
 from core.portfolio.tickers import Tickers
 from scripts.constants.paths import TICKER_DATA_DIR, DATA_DIR
+from scripts.utils.logging import setup_logger
 from scripts.utils.os_manager import ensure_folder
 from scripts.visualization.dashboard import FinanceDashboard
 from scripts.visualization.panel import tab_figures
+
+logger = setup_logger('Main App')
 
 
 def main(arguments):
@@ -35,7 +38,7 @@ def main(arguments):
     # Generate output html
     output_file(filename=arguments.output, title=title)
     save(fig)
-    print(f' > Output saved at {arguments.output}')
+    logger.info(f' > Output saved at {arguments.output}')
 
     # Running Server
     # else:
@@ -48,8 +51,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-d', '--tickers', required=True, help='Tickers detail filepath')
-    parser.add_argument('-t', '--transactions', required=True,  help='Transactions csv filepath')
-    parser.add_argument('-o', '--output', required=True, default='outputs/portfolio_analysis.html',  help='Output filepath')
+    parser.add_argument('-t', '--transactions', required=True, help='Transactions csv filepath')
+    parser.add_argument('-o', '--output', required=True, default='outputs/portfolio_analysis.html',
+                        help='Output filepath')
     parser.add_argument('-u', '--update', required=True, action='store_true', help='Update historical data')
 
     args = parser.parse_args()

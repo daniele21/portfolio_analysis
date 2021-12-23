@@ -1,6 +1,4 @@
-import logging
 import os
-import re
 from typing import Text
 
 import pandas as pd
@@ -9,8 +7,9 @@ from core.portfolio.ticker import Ticker
 from core.portfolio.tickers import Tickers
 from scripts.data.load import load_portfolio_transactions
 from scripts.utils.date import today
+from scripts.utils.logging import setup_logger
 
-logger = logging.getLogger('Portfolio')
+logger = setup_logger('Portfolio')
 
 
 class Portfolio:
@@ -21,54 +20,12 @@ class Portfolio:
         self.transactions = self._init_transactions()
 
     def _init_transactions(self):
+        logger.info(' > Init Portfolio transactions')
         if os.path.exists(self.transactions_path):
             return load_portfolio_transactions(self.transactions_path)
         else:
             return pd.DataFrame(columns=['date', 'ticker_id', 'action', 'quantity',
                                          'price', 'commission', 'gain', 'deposit', 'spent'])
-
-    def add_transaction(self,
-                        tickers: Tickers,
-                        date: Text,
-                        ticker_id: Text,
-                        action: Text,
-                        quantity: float,
-                        price: float,
-                        commission: float,
-                        gain: float,
-                        deposit: float):
-
-        date_match = re.match(r'^(\d{4})-(\d{2})-(\d{2})', date)
-        if not date_match:
-            error = f' > No valid date format. Give YYYY-MM-DD'
-            logger.error(error)
-            raise Exception(error)
-
-        action = action.lower()
-        if action not in ['buy', 'sell', 'deposit']:
-            error = f' > No valid action: {action}'
-            logger.error(error)
-            raise Exception(error)
-
-        if action != 'deposit' and ticker_id not in tickers.tickers_dict:
-            logger.error(f' > Ticker {ticker_id} not in tickers details')
-            return
-
-        row = {'date': date,
-               'ticker_id': ticker_id,
-               'action': action,
-               'quantity': quantity,
-               'price': price,
-               'commission': commission,
-               'gain': gain,
-               'deposit': deposit,
-               'spent': (quantity * price) + commission}
-
-        self.transactions = self.transactions.append(pd.DataFrame(row, index=[0])) \
-            .reset_index(drop=True)
-
-        logger.info(f' > Ticker {ticker_id} transaction inserted at {self.transactions}')
-        self.save_transactions()
 
     def get_amount_spent(self,
                          instrument: Text = None,
@@ -87,6 +44,8 @@ class Portfolio:
 
     def get_ticker_performance(self,
                                ticker: Ticker):
+        logger.debug(f' > Computing ticker performance for ticker: {ticker.id}')
+
         ticker_transactions = self.transactions[self.transactions['ticker_id'] == ticker.id]
         if len(ticker_transactions) == 0:
             logger.error(f' > No transaction of ticker {ticker.id} found!')
@@ -139,6 +98,8 @@ class Portfolio:
 
     def get_portfolio_performance(self, tickers: Tickers):
 
+        logger.debug(f' > Computing the portfolio performance')
+
         portfolio_performance = pd.DataFrame()
         cum_spent_cols, pot_gain_cols = [], []
 
@@ -162,6 +123,8 @@ class Portfolio:
         return portfolio_performance
 
     def get_group_performances(self, tickers: Tickers):
+
+        logger.debug(f' > Computing performance for group of tickers: {tickers.instruments}')
 
         group_performances = {}
 

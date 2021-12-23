@@ -61,41 +61,6 @@ class Tickers:
 
         return instruments, ticker_by_instr
 
-    def add_ticker(self,
-                   ticker_id: Text,
-                   name: Text,
-                   isin: Text,
-                   instrument: Text,
-                   risk: int,
-                   fee: float):
-
-        ticker = Ticker(ticker_id=ticker_id,
-                        folder_dir=self.ticker_data_folder,
-                        name=name,
-                        isin=isin,
-                        instrument=instrument,
-                        risk=risk,
-                        fee=fee
-                        )
-
-        ticker_df = self.ticker_details_df[self.ticker_details_df['ticker_id'] == ticker_id]
-        if len(ticker_df) > 0:
-            self.ticker_details_df = self.ticker_details_df.drop(
-                self.ticker_details_df[self.ticker_details_df['ticker_id'] == ticker_id].index)
-
-        self.ticker_details_df = self.ticker_details_df.append(pd.DataFrame({'ticker_id': ticker_id,
-                                                                             'ticker_name': name,
-                                                                             'isin': isin,
-                                                                             'instrument': instrument,
-                                                                             'risk': risk,
-                                                                             'fee': fee}, index=[0]))
-        self.ticker_details_df = self.ticker_details_df.reset_index(drop=True)
-        self.save_details()
-
-        self.tickers_dict[ticker_id] = ticker
-
-        return
-
     def update_tickers_data(self):
         thread_list = []
         for ticker_id in tqdm(self.tickers_dict, desc='Updating History Data'):
@@ -298,6 +263,3 @@ class Tickers:
         instrument_list = [x for x in instrument_df['ticker_id'].to_list() if x in self.tickers_dict]
 
         return instrument_list
-
-    def save_details(self):
-        self.ticker_details_df.to_csv(self.ticker_details_path)
