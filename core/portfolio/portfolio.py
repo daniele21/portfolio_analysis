@@ -74,8 +74,7 @@ class Portfolio:
                          instrument: Text = None,
                          tickers: Tickers = None):
         if instrument is not None:
-            instrument_df = tickers.get_tickers_by_instrument(instrument)
-            ticker_ids = instrument_df['ticker_id'].to_list()
+            ticker_ids = tickers.get_tickers_by_instrument(instrument)
             amount_spent = 0
             for ticker_id in ticker_ids:
                 ticker_df = self.transactions[self.transactions['ticker_id'] == ticker_id]
@@ -138,14 +137,61 @@ class Portfolio:
 
         return ticker_performance
 
-    # def get_ticker_performances(self,
-    #                             tickers: Tickers):
-    #     performances = pd.DataFrame()
-    #
-    #     for ticker_id in tickers.tickers_dict:
-    #         ticker_performance_df = self.get_ticker_performance(tickers.get_ticker(ticker_id))
-    #         performances = performances.merge(ticker_performance_df['performance'], right_index=True)
-    #         performances = performances.rename(columns={'performance': ticker_id})
+    def get_portfolio_performance(self, tickers: Tickers):
+
+        portfolio_performance = pd.DataFrame()
+        cum_spent_cols, pot_gain_cols = [], []
+
+        for ticker in tickers.tickers_dict.values():
+            ticker_performance = self.get_ticker_performance(ticker)
+
+            cum_spent_col, pot_gain_col = f'{ticker.id}_cum_spent', f'{ticker.id}_potential_gain'
+            cum_spent_cols.append(cum_spent_col)
+            pot_gain_cols.append(pot_gain_col)
+            ticker_df = pd.DataFrame({cum_spent_col: ticker_performance['cum_spent'].to_list(),
+                                      pot_gain_col: ticker_performance['potential_gain'].to_list()},
+                                     index=ticker_performance.index)
+            portfolio_performance = pd.concat((portfolio_performance, ticker_df), axis=1)
+
+        portfolio_performance = portfolio_performance.fillna(method='ffill')
+        portfolio_performance['cum_spent'] = portfolio_performance[cum_spent_cols].sum(axis=1)
+        portfolio_performance['potential_gain'] = portfolio_performance[pot_gain_cols].sum(axis=1)
+
+        portfolio_performance['performance'] = portfolio_performance['potential_gain'] / portfolio_performance['cum_spent']
+
+        return portfolio_performance
+
+    def get_group_performances(self, tickers: Tickers):
+
+        group_performances = {}
+
+        for instr in tickers.instruments:
+            ticker_id_list = tickers.get_tickers_by_instrument(instr)
+            group_performance = pd.DataFrame()
+            cum_spent_cols, pot_gain_cols = [], []
+
+            for ticker_id in ticker_id_list:
+                ticker = tickers.tickers_dict[ticker_id]
+
+                ticker_performance = self.get_ticker_performance(ticker)
+                # group_performance = group_performance.append(ticker_performance)
+                cum_spent_col, pot_gain_col = f'{ticker_id}_cum_spent', f'{ticker_id}_potential_gain'
+                cum_spent_cols.append(cum_spent_col)
+                pot_gain_cols.append(pot_gain_col)
+                ticker_df = pd.DataFrame({cum_spent_col: ticker_performance['cum_spent'].to_list(),
+                                          pot_gain_col: ticker_performance['potential_gain'].to_list()},
+                                         index=ticker_performance.index)
+                group_performance = pd.concat((group_performance, ticker_df), axis=1)
+
+            group_performance = group_performance.fillna(method='ffill')
+            group_performance['cum_spent'] = group_performance[cum_spent_cols].sum(axis=1)
+            group_performance['potential_gain'] = group_performance[pot_gain_cols].sum(axis=1)
+
+            group_performance['performance'] = group_performance['potential_gain'] / group_performance['cum_spent']
+
+            group_performances[instr] = group_performance
+
+        return group_performances
 
     def get_ticker_transactions(self,
                                 ticker_id: Text):
@@ -173,9 +219,9 @@ class Portfolio:
         amount_spent = self.get_amount_spent(instrument=instrument,
                                              tickers=tickers)
         tickers_ids = tickers.get_tickers_by_instrument(instrument)
-        instrument_stake = {ticker_id: 0 for ticker_id in tickers_ids['ticker_id'].to_list()}
+        instrument_stake = {ticker_id: 0 for ticker_id in tickers_ids}
 
-        for ticker_id in tickers_ids['ticker_id'].to_list():
+        for ticker_id in tickers_ids:
             ticker_df = self.transactions[self.transactions['ticker_id'] == ticker_id]
             instrument_stake[ticker_id] += (ticker_df['spent'].sum() - ticker_df['gain'].sum()) / amount_spent
 

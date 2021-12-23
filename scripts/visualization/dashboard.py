@@ -1,3 +1,5 @@
+from typing import Dict
+
 import numpy as np
 import pandas as pd
 from bokeh.layouts import gridplot, column
@@ -51,7 +53,9 @@ class FinanceDashboard:
 
             fig_data = column([fig_stock, fig_volume])
 
-            fig = gridplot([[date_range_slider, None], [fig_data, fig_info]],
+            # fig = gridplot([[date_range_slider, None], [fig_data, fig_info]],
+            #                merge_tools=True)
+            fig = gridplot([[fig_data, fig_info]],
                            merge_tools=True)
             tabs_dict[ticker_id] = fig
 
@@ -60,8 +64,9 @@ class FinanceDashboard:
         return tabs
 
     def ticker_performance_plot(self) -> Tabs:
-        tabs_dict = {}
-        stock_dict = {}
+        tabs_dict = {'Portfolio': None}
+        for instr in self.tickers.instruments:
+            tabs_dict[instr] = None
 
         for ticker_id in self.ticker_ids:
             ticker = self.tickers.get_ticker(ticker_id)
@@ -77,7 +82,6 @@ class FinanceDashboard:
             if len(stock.data['index']) <= 1:
                 continue
 
-            stock_dict[ticker_id] = stock
             start_date, end_date = stock.data['index'][0], stock.data['index'][-1]
             date_range_slider = DateRangeSlider(title='Data Range',
                                                 value=(start_date, end_date),
@@ -89,14 +93,38 @@ class FinanceDashboard:
                            'value': list(ticker_details.values())}
             fig_info = plot_info_table(text_inputs)
 
-            fig = gridplot([[date_range_slider, None], [fig_perf, fig_info]],
+            # fig = gridplot([[date_range_slider, None], [fig_perf, fig_info]],
+            #                merge_tools=True)
+            fig = gridplot([[fig_perf, fig_info]],
                            merge_tools=True)
             tabs_dict[ticker_id] = fig
 
-        # fig_perf = plot_performances(stock_dict, date_range_slider)
-        # fig = gridplot([[date_range_slider, None], [fig_perf, None]],
+        portfolio_performance = self.portfolio.get_portfolio_performance(self.tickers)
+        performance_df = portfolio_performance.reset_index()[['Date', 'performance']]
+        stock = ColumnDataSource(
+            data=dict(Date=[], performance=[], index=[]))
+        stock.data = stock.from_df(performance_df)
+        start_date, end_date = stock.data['index'][0], stock.data['index'][-1]
+        date_range_slider = DateRangeSlider(title='Data Range',
+                                            value=(start_date, end_date),
+                                            start=start_date, end=end_date)
+        fig_perf = plot_performance(stock, date_range_slider)
+
+        text_inputs = {'info': ['Portfolio Performance'],
+                       'value': [performance_df['performance'][0]]}
+        fig_info = plot_info_table(text_inputs)
+
+        # fig = gridplot([[date_range_slider, None], [fig_perf, fig_info]],
         #                merge_tools=True)
-        # tabs_dict['All'] = fig
+        fig = gridplot([[fig_perf, fig_info]],
+                       merge_tools=True)
+
+        tabs_dict['Portfolio'] = fig
+
+        for group, df in self.portfolio.get_group_performances(tickers=self.tickers).items():
+            fig = self._performance_plot(df, text_inputs={'info': [f'{group} performance'],
+                                                    'value': [df['performance'][-1]]})
+            tabs_dict[group] = fig
 
         tabs = tab_figures(tabs_dict)
 
@@ -154,3 +182,23 @@ class FinanceDashboard:
         tabs = tab_figures(group_tabs)
 
         return tabs
+
+    def _performance_plot(self, df: pd.DataFrame, text_inputs: Dict):
+        performance_df = df.reset_index()[['Date', 'performance']]
+        stock = ColumnDataSource(
+            data=dict(Date=[], performance=[], index=[]))
+        stock.data = stock.from_df(performance_df)
+        start_date, end_date = stock.data['index'][0], stock.data['index'][-1]
+        date_range_slider = DateRangeSlider(title='Data Range',
+                                            value=(start_date, end_date),
+                                            start=start_date, end=end_date)
+        fig_perf = plot_performance(stock, date_range_slider)
+
+        # text_inputs = {'info': ['Portfolio Performance'],
+        #                'value': [performance_df['performance'][0]]}
+        fig_info = plot_info_table(text_inputs)
+
+        fig = gridplot([[date_range_slider, None], [fig_perf, fig_info]],
+                       merge_tools=True)
+
+        return fig
