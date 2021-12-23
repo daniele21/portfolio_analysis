@@ -3,11 +3,11 @@ from typing import Text
 
 import pandas as pd
 
-from scripts.data.load import load_csv
-from scripts.data.yahoo_extraction import extract_data
-from scripts.utils.date import yesterday, check_date
-from scripts.utils.logging import setup_logger
-from scripts.utils.pandas_memory import pandas_series_to_float32
+from portfolio_analysis.scripts.data.load import load_csv
+from portfolio_analysis.scripts.data.yahoo_extraction import extract_data
+from portfolio_analysis.scripts.utils.date import yesterday, check_date
+from portfolio_analysis.scripts.utils.logging import setup_logger
+from portfolio_analysis.scripts.utils.pandas_memory import pandas_series_to_float32
 
 
 class Ticker:

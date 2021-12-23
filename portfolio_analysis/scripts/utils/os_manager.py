@@ -1,6 +1,6 @@
+import logging
 import os
 from typing import Text
-import logging
 
 logger = logging.getLogger('OS manager')
 

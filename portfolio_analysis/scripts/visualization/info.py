@@ -1,4 +1,5 @@
 from typing import Dict, List
+
 from bokeh.layouts import column
 from bokeh.models import TextInput, TableColumn, DataTable, ColumnDataSource
 

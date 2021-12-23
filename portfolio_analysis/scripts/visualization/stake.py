@@ -8,7 +8,7 @@ from bokeh.palettes import Category20c
 from bokeh.plotting import figure
 from bokeh.transform import cumsum
 
-from scripts.constants.constants import TOOLS
+from portfolio_analysis.scripts.constants.constants import TOOLS
 
 HEIGHT = 500
 

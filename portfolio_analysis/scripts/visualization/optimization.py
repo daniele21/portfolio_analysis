@@ -6,9 +6,9 @@ from bokeh.models import HoverTool, ColumnDataSource
 from bokeh.palettes import Category20, YlGn
 from bokeh.plotting import figure
 
-from core.operations.optimizations import msr, gmv
-from core.operations.time_series import portfolio_return, portfolio_vol
-from scripts.constants.constants import TOOLS
+from portfolio_analysis.core.operations.optimizations import msr, gmv
+from portfolio_analysis.core.operations.time_series import portfolio_return, portfolio_vol
+from portfolio_analysis.scripts.constants.constants import TOOLS
 
 H_PLOT = 500
 W_PLOT = 1000

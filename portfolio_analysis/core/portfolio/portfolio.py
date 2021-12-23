@@ -3,11 +3,11 @@ from typing import Text
 
 import pandas as pd
 
-from core.portfolio.ticker import Ticker
-from core.portfolio.tickers import Tickers
-from scripts.data.load import load_portfolio_transactions
-from scripts.utils.date import today
-from scripts.utils.logging import setup_logger
+from portfolio_analysis.core.portfolio.ticker import Ticker
+from portfolio_analysis.core.portfolio.tickers import Tickers
+from portfolio_analysis.scripts.data.load import load_portfolio_transactions
+from portfolio_analysis.scripts.utils.date import today
+from portfolio_analysis.scripts.utils.logging import setup_logger
 
 logger = setup_logger('Portfolio')
 

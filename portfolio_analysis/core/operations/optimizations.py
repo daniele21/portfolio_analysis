@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
 
-from core.operations.time_series import portfolio_return, portfolio_vol
+from portfolio_analysis.core.operations.time_series import portfolio_return, portfolio_vol
 
 
 def minimize_vol(target_return, er, cov):

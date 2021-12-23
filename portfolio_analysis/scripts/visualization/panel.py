@@ -1,8 +1,8 @@
-from typing import List, Text, Dict
+from typing import Text, Dict
 
 from bokeh.models.widgets import Panel, Tabs
-from bokeh.io import output_file, show
-from bokeh.plotting import figure, Figure
+from bokeh.plotting import Figure
+
 
 # output_file("slider.html")
 

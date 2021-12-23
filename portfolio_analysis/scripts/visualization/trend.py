@@ -9,8 +9,8 @@ from bokeh.palettes import Category20
 from bokeh.plotting import figure
 
 # Define constants
-from scripts.constants.constants import TOOLS
-from scripts.constants.paths import TICKER_DATA_DIR
+from portfolio_analysis.scripts.constants.constants import TOOLS
+from portfolio_analysis.scripts.constants.paths import TICKER_DATA_DIR
 
 W_PLOT = 1300
 H_PLOT = 600

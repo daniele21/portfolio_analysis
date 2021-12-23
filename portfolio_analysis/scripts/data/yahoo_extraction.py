@@ -4,7 +4,7 @@ from typing import Text
 
 import pandas_datareader as pdr
 
-from scripts.utils.date import yesterday
+from portfolio_analysis.scripts.utils.date import yesterday
 
 logger = logging.getLogger('Data Extraction')
 

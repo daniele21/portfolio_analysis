@@ -7,13 +7,14 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from core.operations.optimizations import get_efficient_frontier, msr, optimal_weights
-from core.operations.time_series import sharpe_ratio, get_df_from_dict, get_cov, portfolio_vol, annualized_rets, \
+from portfolio_analysis.core.operations.optimizations import get_efficient_frontier, msr, optimal_weights
+from portfolio_analysis.core.operations.time_series import sharpe_ratio, get_df_from_dict, get_cov, portfolio_vol, \
+    annualized_rets, \
     portfolio_return, get_er
-from core.portfolio.ticker import Ticker
-from scripts.constants.constants import RISK_FREE_RATE
-from scripts.data.load import load_ticker_details
-from scripts.visualization.optimization import optimization_plot
+from portfolio_analysis.core.portfolio.ticker import Ticker
+from portfolio_analysis.scripts.constants.constants import RISK_FREE_RATE
+from portfolio_analysis.scripts.data.load import load_ticker_details
+from portfolio_analysis.scripts.visualization.optimization import optimization_plot
 
 logger = logging.getLogger('Tickers')
 

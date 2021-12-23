@@ -5,14 +5,14 @@ import pandas as pd
 from bokeh.layouts import gridplot, column
 from bokeh.models import Tabs, ColumnDataSource, DateRangeSlider
 
-from core.operations.time_series import portfolio_return, portfolio_vol
-from core.portfolio.portfolio import Portfolio
-from core.portfolio.tickers import Tickers
-from scripts.visualization.info import plot_info_table
-from scripts.visualization.optimization import optimization_plot
-from scripts.visualization.panel import tab_figures
-from scripts.visualization.stake import stake_plot
-from scripts.visualization.trend import plot_stock_price, plot_ticker_volume, plot_performance
+from portfolio_analysis.core.operations.time_series import portfolio_return, portfolio_vol
+from portfolio_analysis.core.portfolio.portfolio import Portfolio
+from portfolio_analysis.core.portfolio.tickers import Tickers
+from portfolio_analysis.scripts.visualization.info import plot_info_table
+from portfolio_analysis.scripts.visualization.optimization import optimization_plot
+from portfolio_analysis.scripts.visualization.panel import tab_figures
+from portfolio_analysis.scripts.visualization.stake import stake_plot
+from portfolio_analysis.scripts.visualization.trend import plot_stock_price, plot_ticker_volume, plot_performance
 
 
 class FinanceDashboard:
