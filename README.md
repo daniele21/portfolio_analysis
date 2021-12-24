@@ -18,7 +18,17 @@ Dependences:
 
 <img src=/static/presentation.gif width="800">
 
-Try the test example here: [portfolio_analysis](https://daniele21.github.io/portfolio_analysis/)
+#### HMTL test sample
+
+Try the test example here:
+
+[![HTML demo](https://img.shields.io/badge/Web_Demo-v1.1-blue)](https://daniele21.github.io/portfolio_analysis/)
+
+-----
+
+##### Demo for Portfolio Analysis - Colab Version
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1PWY93Y80gBAUStEYQtbOCqaDmlmXoXTc?usp=sharing)
 
 ------
 
