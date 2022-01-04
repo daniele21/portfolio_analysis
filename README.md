@@ -208,7 +208,11 @@ Here are two example of portfolio optimization for **all** securities and for **
 - [x] Entire Portfolio performance
 - [x] Performance for each instrument of investment
 
-*Version 2.0*
+*Version 1.2*
+
+- [ ] Compute automatically the **risk** for each security
+
+*Future Features*
 
 - [ ] Better UI
 - [ ] File management from UI
@@ -250,3 +254,4 @@ Daniele Moltisanti
 [![Linkedin](https://img.shields.io/badge/Linkedin-Daniele%20Moltisanti-blue)](https://www.linkedin.com/in/daniele-moltisanti/)
 
 [![Portfolio](https://img.shields.io/badge/Portfolio-Daniele%20Moltisanti-9cf)](https://daniele21.github.io)
+
