@@ -70,8 +70,14 @@ class Ticker:
         return filter_df
 
     def update_data(self):
+        from datetime import datetime
+
         last_date = str((self.data.index.to_list()[-1]).date())
-        if last_date != str(yesterday()):
+        last_date_dt, yest_dt = datetime.strptime(last_date, '%Y-%m-%d'), datetime.strptime(str(yesterday()),
+                                                                                            '%Y-%m-%d')
+
+        if last_date_dt < yest_dt:
+            self.logger.info(f' > Updating {self.id} data from {str(last_date_dt.date())} to {str(yest_dt.date())}')
             update_data = self._load_data(start_date=last_date)
 
             self.data = self.data.append(update_data)
