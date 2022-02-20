@@ -37,7 +37,8 @@ class Ticker:
         if os.path.exists(self.path):
             data = load_csv(self.path)
         else:
-            data = self._load_data(start_date=None)
+            yesterday_date = str(yesterday())
+            data = self._load_data(start_date=None, end_date=yesterday_date)
             if data is None:
                 return None
 
@@ -50,9 +51,10 @@ class Ticker:
 
         return data
 
-    def _load_data(self, start_date):
+    def _load_data(self, start_date, end_date=None):
         data = extract_data(ticker=self.id,
-                            start_date=start_date)
+                            start_date=start_date,
+                            end_date=end_date)
         return data
 
     def get_data_from_date(self,
@@ -70,19 +72,25 @@ class Ticker:
         return filter_df
 
     def update_data(self):
-        from datetime import datetime
+        import datetime as dt
+
+        if len(self.data) == 0:
+            return
 
         last_date = str((self.data.index.to_list()[-1]).date())
-        last_date_dt, yest_dt = datetime.strptime(last_date, '%Y-%m-%d'), datetime.strptime(str(yesterday()),
-                                                                                            '%Y-%m-%d')
+        yesterday_date = str(yesterday())
+
+        last_date_dt, yest_dt = dt.datetime.strptime(last_date, '%Y-%m-%d'), dt.datetime.strptime(yesterday_date,
+                                                                                                  '%Y-%m-%d')
 
         if last_date_dt < yest_dt:
+            start_date = last_date_dt + dt.timedelta(1)
             self.logger.info(f' > Updating {self.id} data from {str(last_date_dt.date())} to {str(yest_dt.date())}')
-            update_data = self._load_data(start_date=last_date)
+            update_data = self._load_data(start_date=start_date,
+                                          end_date=yesterday_date)
 
             self.data = self.data.append(update_data)
-            self.data = self.data.drop(self.data[self.data.duplicated()].index)
-
+            self.data = self.data.drop_duplicates()
             self.save()
 
         return

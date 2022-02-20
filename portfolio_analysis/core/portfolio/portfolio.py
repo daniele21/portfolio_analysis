@@ -113,6 +113,7 @@ class Portfolio:
                                       pot_gain_col: ticker_performance['potential_gain'].to_list()},
                                      index=ticker_performance.index)
             portfolio_performance = pd.concat((portfolio_performance, ticker_df), axis=1)
+            portfolio_performance = portfolio_performance.drop_duplicates()
 
         portfolio_performance = portfolio_performance.fillna(method='ffill')
         portfolio_performance['cum_spent'] = portfolio_performance[cum_spent_cols].sum(axis=1)
