@@ -90,7 +90,9 @@ class Ticker:
                                           end_date=yesterday_date)
 
             self.data = self.data.append(update_data)
-            self.data = self.data.drop_duplicates()
+            self.data = self.data.reset_index() \
+                .drop_duplicates(subset='Date', keep='last') \
+                .set_index('Date').sort_index()
             self.save()
 
         return
