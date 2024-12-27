@@ -39,6 +39,7 @@ class Ticker:
         else:
             yesterday_date = str(yesterday())
             data = self._load_data(start_date=None, end_date=yesterday_date)
+            data.columns = data.columns.get_level_values(0)
             if data is None:
                 return None
 

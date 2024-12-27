@@ -1,9 +1,7 @@
 import datetime
 import logging
 from typing import Text
-
-import pandas_datareader as pdr
-
+import yfinance as yf
 from portfolio_analysis.scripts.utils.date import yesterday
 
 logger = logging.getLogger('Data Extraction')
@@ -23,11 +21,12 @@ def extract_data(ticker: Text,
             end_date = end_date if end_datetime > start_datetime else None
 
     try:
-        data = pdr.get_data_yahoo(ticker,
-                                  start=start_date,
-                                  end=end_date)
-    except KeyError as e:
-        logger.warning(f' > It was not possible to load the data for {ticker}')
+        data = yf.download(ticker, start=start_date, end=end_date)
+        if data.empty:
+            logger.warning(f' > No data was returned for {ticker}. Please check the ticker or date range.')
+            data = None
+    except Exception as e:
+        logger.warning(f' > It was not possible to load the data for {ticker}: {e}')
         data = None
 
     return data

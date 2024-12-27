@@ -92,7 +92,7 @@ class Portfolio:
                 'cum_spent']
             output_df['performance'] = output_df['potential_gain'] / output_df['cum_spent']
 
-            ticker_performance = ticker_performance.append(output_df)
+            ticker_performance = pd.concat((ticker_performance, output_df))
 
         return ticker_performance
 
