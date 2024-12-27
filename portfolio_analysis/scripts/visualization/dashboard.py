@@ -3,7 +3,7 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 from bokeh.layouts import gridplot, column
-from bokeh.models import Tabs, ColumnDataSource, DateRangeSlider, Range1d
+from bokeh.models import Tabs, ColumnDataSource, DateRangeSlider
 
 from portfolio_analysis.core.operations.time_series import portfolio_return, portfolio_vol
 from portfolio_analysis.core.portfolio.portfolio import Portfolio
@@ -12,7 +12,7 @@ from portfolio_analysis.scripts.visualization.info import plot_info_table
 from portfolio_analysis.scripts.visualization.optimization import optimization_plot
 from portfolio_analysis.scripts.visualization.panel import tab_figures
 from portfolio_analysis.scripts.visualization.stake import stake_plot
-from portfolio_analysis.scripts.visualization.trend import plot_stock_price, plot_ticker_volume, plot_performance, \
+from portfolio_analysis.scripts.visualization.trend import plot_performance, \
     plot_stock_with_volume
 
 
@@ -67,17 +67,12 @@ class FinanceDashboard:
 
             source = prepare_column_data_source(processed_data, ['Date', 'Open', 'Close', 'High', 'Low', 'Volume'])
             start_date, end_date = source.data['Date'][0], source.data['Date'][-1]
-            date_slider = create_date_range_slider(start_date, end_date)
 
-            # shared_x_range = Range1d(start=source.data["Date"].min(), end=source.data["Date"].max())
-            # fig_stock = plot_stock_price(source, shared_x_range)
-            # fig_volume = plot_ticker_volume(source, shared_x_range)
             fig_stock_volume = plot_stock_with_volume(source)
             ticker_details = self.tickers.get_ticker_details(ticker_id)
 
             text_inputs = {'info': list(ticker_details.keys()), 'value': list(ticker_details.values())}
 
-            # tabs_dict[ticker_id] = create_grid_plot([fig_stock, fig_volume], text_inputs)
             tabs_dict[ticker_id] = create_grid_plot([fig_stock_volume], text_inputs)
 
         return tab_figures(tabs_dict)
