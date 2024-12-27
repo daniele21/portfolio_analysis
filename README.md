@@ -222,23 +222,28 @@ Here are two example of portfolio optimization for **all** securities and for **
 
 ## Try it
 
-1. Install the requirements.txt
+1. Install the requirements
+
+        pip install -r reqs.txt
+
 2. Create your own **ticker_details.json** and **transactions.json** (you can name them as you want)
 
    Hint: take inspiration from **tickers_test.json** and **transactions_test.json**
 
+
 3. Generate the static html
 
-          python3 main.py -d ticker_test.json -t transactions_test.json -u -o outputs/portfolio_analysis.html
+          python3 portfolio_analysis/main.py -d tickers_test.json -t transactions_test.json -u -o outputs/portfolio_analysis.html
     [-u --> update historical data]
+
+
 4. Have fun!
 
 -----
 
 ## Contribution
 
-If you want to contribute in this project for the next release, feel free to contact me. You find my contact at the **
-contact** section in my [portfolio](https://daniele21.github.io).
+If you want to contribute in this project for the next release, feel free to contact me. You find my contact at the **contact** section in my [portfolio](https://daniele21.github.io).
 
 I need someone who can help me in:
 
