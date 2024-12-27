@@ -172,7 +172,10 @@ class Portfolio:
             ticker_id, instrument = row['ticker_id'], row['instrument']
             ticker_df = self.get_ticker_transactions(ticker_id)
             ticker_spent = ticker_df['spent'].sum() - ticker_df['gain'].sum()
-            ticker_stake[instrument] += ticker_spent / amount_spent
+            try:
+                ticker_stake[instrument] += ticker_spent / amount_spent
+            except ZeroDivisionError as e:
+                ticker_stake[instrument] += 0
 
         return ticker_stake
 
@@ -187,7 +190,10 @@ class Portfolio:
 
         for ticker_id in tickers_ids:
             ticker_df = self.transactions[self.transactions['ticker_id'] == ticker_id]
-            instrument_stake[ticker_id] += (ticker_df['spent'].sum() - ticker_df['gain'].sum()) / amount_spent
+            try:
+                instrument_stake[ticker_id] += (ticker_df['spent'].sum() - ticker_df['gain'].sum()) / amount_spent
+            except ZeroDivisionError as e:
+                instrument_stake[ticker_id] += 0
 
         return instrument_stake
 
@@ -199,7 +205,11 @@ class Portfolio:
         for ticker_id in ticker_items['ticker_id'].to_list():
             ticker_df = self.transactions[self.transactions['ticker_id'] == ticker_id]
             risk = ticker_items[ticker_items['ticker_id'] == ticker_id]['risk'].iloc[0]
-            etf_risk_stake[str(int(risk))] += (ticker_df['spent'].sum() - ticker_df['gain'].sum()) / amount_spent
+
+            try:
+                etf_risk_stake[str(int(risk))] += (ticker_df['spent'].sum() - ticker_df['gain'].sum()) / amount_spent
+            except ZeroDivisionError as e:
+                etf_risk_stake[str(int(risk))] += 0
 
         return etf_risk_stake
 
