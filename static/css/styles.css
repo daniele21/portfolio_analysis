@@ -1,0 +1,147 @@
+/* static/css/styles.css */
+
+/* Migliorare l'aspetto delle card */
+.card {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s, box-shadow 0.3s, background-color 0.3s;
+    border-radius: 10px;
+    background-color: #ffffff;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+    background-color: #f8f9fa;
+}
+
+/* Regolare la dimensione e centralizzazione dei plot */
+.plot-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    /* Rimosso min-height e max-height per consentire l'adattamento dinamico */
+    padding: 10px; /* Aggiunge un po' di spazio interno */
+    background-color: #ffffff; /* Sfondo bianco per i grafici */
+    /* Rimosso overflow: hidden */
+}
+
+/* Assicurarsi che il grafico Bokeh occupi l'intero spazio del plot-container senza distorsioni */
+.bk-root {
+    width: 100% !important;
+    height: auto !important; /* Mantiene le proporzioni */
+    max-height: none !important; /* Rimuove il limite di altezza */
+    margin: 0 auto !important; /* Centralizza il grafico */
+    padding: 0 !important;
+}
+
+/* Migliorare la responsività */
+@media (max-width: 767.98px) {
+    .plot-container {
+        /* Rimosso min-height e max-height per dispositivi mobili */
+    }
+}
+
+/* Migliorare la tipografia */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #fafafa;
+}
+
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+.footer {
+    background-color: #343a40;
+    color: #ffffff;
+}
+
+/* Stili per la sezione Features */
+.feature-card {
+    border: none;
+    background-color: #f8f9fa;
+    transition: transform 0.3s;
+}
+
+.feature-card:hover {
+    transform: translateY(-10px);
+}
+
+/* Stili per le Testimonianze */
+.testimonial-card {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    height: 100%;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.testimonial-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.testimonial-text {
+    font-style: italic;
+    color: #6c757d;
+}
+
+.testimonial-author {
+    margin-top: 15px;
+    font-weight: bold;
+    color: #343a40;
+}
+
+/* Stili per i Piani di Pricing */
+.pricing-card {
+    border: none;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.pricing-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.pricing-card.featured {
+    border: 2px solid #007bff;
+    background-color: #e9f5ff;
+}
+
+.pricing-card h3 {
+    font-weight: bold;
+}
+
+.pricing-card h4 {
+    color: #007bff;
+}
+
+.pricing-card ul {
+    list-style: none;
+    padding: 0;
+}
+
+.pricing-card ul li {
+    padding: 10px 0;
+}
+
+.pricing-card ul li i {
+    margin-right: 10px;
+}
+
+/* Stili per il Form di Contatto */
+form .form-control {
+    border-radius: 0;
+}
+
+form .btn {
+    border-radius: 0;
+}
+
+/* Aggiungere transizioni per le animazioni AOS */
+.animate__animated.animate__fadeInUp {
+    animation-duration: 1s;
+    animation-fill-mode: both;
+}

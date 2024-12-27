@@ -62,7 +62,8 @@ def stake_plot(stake_dict: Dict,
     # Creating tooltips
     hover.tooltips = [("Stake", "@value{( 0.00 )}")]
 
-    grid = gridplot([[wedge_fig, bar_fig]])
+    #grid = gridplot([[wedge_fig, bar_fig]])
+    grid = wedge_fig
     title = Div(text=title, style={'font-size': '200%'}, align='center')
     fig = column(title, grid)
 

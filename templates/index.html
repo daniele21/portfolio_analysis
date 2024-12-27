@@ -1,10 +1,295 @@
+<!-- templates/index.html -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <title>Finance Dashboard</title>
+    <!-- Includi Bootstrap 4 CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Includi Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <!-- Includi AOS CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet">
+    <!-- Includi Bokeh CSS -->
+    {{ bokeh_css|safe }}
+    <!-- Include il tuo CSS personalizzato -->
+    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet">
 </head>
 <body>
-$END$
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <a class="navbar-brand" href="#">Finance Dashboard</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="jumbotron text-center" data-aos="fade-down">
+        <h1 class="display-4">Benvenuto nel Tuo Finance Dashboard</h1>
+        <p class="lead">Analizza, monitora e ottimizza il tuo portafoglio finanziario in modo semplice ed efficace.</p>
+        <hr class="my-4">
+        <p>Esplora le diverse sezioni per approfondire le tue analisi.</p>
+        <a class="btn btn-primary btn-lg" href="#features" role="button" data-aos="fade-up">Scopri di più</a>
+    </div>
+
+    <!-- Sezione Features -->
+    <div class="container" id="features">
+        <div class="row">
+            <div class="col-12 text-center mb-5" data-aos="zoom-in">
+                <h2>Caratteristiche Principali</h2>
+                <p class="lead">Scopri le potenti funzionalità che la nostra dashboard offre per migliorare le tue decisioni finanziarie.</p>
+            </div>
+        </div>
+        <div class="row">
+            <!-- Feature 1 -->
+            <div class="col-md-4 mb-4" data-aos="fade-up" data-aos-delay="100">
+                <div class="card h-100 feature-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-chart-line fa-3x mb-3 text-primary"></i>
+                        <h5 class="card-title">Analisi Avanzata</h5>
+                        <p class="card-text">Utilizza strumenti di analisi sofisticati per monitorare e ottimizzare il tuo portafoglio.</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Feature 2 -->
+            <div class="col-md-4 mb-4" data-aos="fade-up" data-aos-delay="200">
+                <div class="card h-100 feature-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-sync-alt fa-3x mb-3 text-success"></i>
+                        <h5 class="card-title">Aggiornamenti in Tempo Reale</h5>
+                        <p class="card-text">Ricevi dati e aggiornamenti in tempo reale per prendere decisioni informate al momento giusto.</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Feature 3 -->
+            <div class="col-md-4 mb-4" data-aos="fade-up" data-aos-delay="300">
+                <div class="card h-100 feature-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-lock fa-3x mb-3 text-danger"></i>
+                        <h5 class="card-title">Sicurezza Avanzata</h5>
+                        <p class="card-text">Proteggi i tuoi dati finanziari con le nostre soluzioni di sicurezza di livello industriale.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sezione Grafici -->
+    <div class="container">
+        <!-- Stake Plot -->
+        <div class="row mb-4" data-aos="fade-up">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        {{ plots['stake']['title'] }}
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="plot-container">
+                            {{ plots['stake']['div']|safe }}
+                        </div>
+                    </div>
+                </div>
+                {{ plots['stake']['script']|safe }}
+            </div>
+        </div>
+
+        <!-- History Plot -->
+        <div class="row mb-4" data-aos="fade-up">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        {{ plots['history']['title'] }}
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="plot-container">
+                            {{ plots['history']['div']|safe }}
+                        </div>
+                    </div>
+                </div>
+                {{ plots['history']['script']|safe }}
+            </div>
+        </div>
+
+        <!-- Performance Plot -->
+        <div class="row mb-4" data-aos="fade-up">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        {{ plots['performance']['title'] }}
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="plot-container">
+                            {{ plots['performance']['div']|safe }}
+                        </div>
+                    </div>
+                </div>
+                {{ plots['performance']['script']|safe }}
+            </div>
+        </div>
+
+        <!-- Optimization Plot -->
+        <div class="row mb-4" data-aos="fade-up">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        {{ plots['optimization']['title'] }}
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="plot-container">
+                            {{ plots['optimization']['div']|safe }}
+                        </div>
+                    </div>
+                </div>
+                {{ plots['optimization']['script']|safe }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sezione Testimonianze -->
+    <!--
+    <div class="container my-5" id="testimonials">
+        <div class="row">
+            <div class="col-12 text-center mb-5" data-aos="zoom-in">
+                <h2>Testimonianze</h2>
+                <p class="lead">Ecco cosa dicono i nostri clienti soddisfatti.</p>
+            </div>
+        </div>
+        <div class="row">
+
+            <div class="col-md-4 mb-4" data-aos="fade-right" data-aos-delay="100">
+                <div class="testimonial-card p-4">
+                    <p class="testimonial-text">"La Finance Dashboard ha rivoluzionato il modo in cui gestisco il mio portafoglio. Dati chiari e aggiornamenti in tempo reale!"</p>
+                    <h5 class="testimonial-author">- Mario Rossi</h5>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-4" data-aos="fade-up" data-aos-delay="200">
+                <div class="testimonial-card p-4">
+                    <p class="testimonial-text">"Strumenti di analisi avanzati e un'interfaccia intuitiva. Consiglio vivamente questa dashboard a chiunque sia seriamente interessato alla finanza."</p>
+                    <h5 class="testimonial-author">- Laura Bianchi</h5>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-4" data-aos="fade-left" data-aos-delay="300">
+                <div class="testimonial-card p-4">
+                    <p class="testimonial-text">"Sicurezza impeccabile e supporto clienti eccellente. La mia esperienza con la Finance Dashboard è stata fantastica."</p>
+                    <h5 class="testimonial-author">- Giovanni Verdi</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+    -->
+
+    <!-- Sezione Pricing
+    <div class="container my-5" id="pricing">
+        <div class="row">
+            <div class="col-12 text-center mb-5" data-aos="zoom-in">
+                <h2>Piani e Prezzi</h2>
+                <p class="lead">Scegli il piano che meglio si adatta alle tue esigenze finanziarie.</p>
+            </div>
+        </div>
+        <div class="row">
+
+            <div class="col-md-4 mb-4" data-aos="fade-up" data-aos-delay="100">
+                <div class="card pricing-card">
+                    <div class="card-header text-center">
+                        <h3>Basic</h3>
+                        <h4>$29<span class="text-muted">/mese</span></h4>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success mr-2"></i>Accesso ai grafici principali</li>
+                            <li><i class="fas fa-check text-success mr-2"></i>Analisi di base</li>
+                            <li><i class="fas fa-times text-danger mr-2"></i>Supporto premium</li>
+                        </ul>
+                        <a href="#" class="btn btn-primary btn-block">Inizia Ora</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-4" data-aos="fade-up" data-aos-delay="200">
+                <div class="card pricing-card featured">
+                    <div class="card-header text-center">
+                        <h3>Pro</h3>
+                        <h4>$59<span class="text-muted">/mese</span></h4>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success mr-2"></i>Accesso a tutti i grafici</li>
+                            <li><i class="fas fa-check text-success mr-2"></i>Analisi avanzate</li>
+                            <li><i class="fas fa-check text-success mr-2"></i>Supporto premium</li>
+                        </ul>
+                        <a href="#" class="btn btn-primary btn-block">Inizia Ora</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-4" data-aos="fade-up" data-aos-delay="300">
+                <div class="card pricing-card">
+                    <div class="card-header text-center">
+                        <h3>Enterprise</h3>
+                        <h4>Contattaci</h4>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success mr-2"></i>Soluzioni personalizzate</li>
+                            <li><i class="fas fa-check text-success mr-2"></i>Integrazioni API</li>
+                            <li><i class="fas fa-check text-success mr-2"></i>Supporto dedicato</li>
+                        </ul>
+                        <a href="#" class="btn btn-primary btn-block">Contattaci</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    -->
+
+    <!-- Sezione Contatti
+    <div class="container my-5" id="contact">
+        <div class="row">
+            <div class="col-12 text-center mb-5" data-aos="zoom-in">
+                <h2>Contattaci</h2>
+                <p class="lead">Hai domande? Siamo qui per aiutarti!</p>
+            </div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-md-8" data-aos="fade-up">
+                <form>
+                    <div class="form-group">
+                        <label for="name">Nome</label>
+                        <input type="text" class="form-control" id="name" placeholder="Inserisci il tuo nome">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" class="form-control" id="email" placeholder="Inserisci la tua email">
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Messaggio</label>
+                        <textarea class="form-control" id="message" rows="5" placeholder="Scrivi il tuo messaggio"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Invia</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    -->
+
+    <!-- Footer -->
+    <footer class="footer bg-dark text-white text-center py-3">
+        © 2024 Finance Dashboard. Tutti i diritti riservati.
+    </footer>
+
+    <!-- Includi jQuery, Popper.js e Bootstrap 4 JS Bundle -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <!-- Includi AOS JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+    <!-- Includi Bokeh JS -->
+    {{ bokeh_js|safe }}
+    <!-- Include il tuo JS personalizzato -->
+    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
 </body>
 </html>

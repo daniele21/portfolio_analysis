@@ -1,4 +1,7 @@
 from typing import Dict, List
+from bokeh.layouts import column, row
+from bokeh.models import Div
+from bokeh.plotting import output_file, save
 
 import numpy as np
 import pandas as pd
@@ -143,3 +146,31 @@ class FinanceDashboard:
             tabs_dict[group] = fig
 
         return tab_figures(tabs_dict)
+
+        # Aggiungi questa funzione alla classe esistente
+    def create_dashboard(self, output_path="dashboard.html"):
+        # Intestazione
+        header = Div(text="<h1>Finance Dashboard</h1>",
+                     style={"text-align": "center", "font-family": "Arial", "color": "#4CAF50"})
+
+        # Grafici
+        ticker_data_tabs = self.ticker_data_plot()
+        ticker_perf_tabs = self.ticker_performance_plot()
+        stake_status_tabs = self.stake_status_plot()
+        optimization_tabs = self.portfolio_optimization()
+
+        # Footer
+        footer = Div(text="<p style='text-align:center;'>© 2024 Financial Insights</p>", style={"color": "gray"})
+
+        # Layout completo
+        layout = column(
+            header,
+            row(ticker_data_tabs, ticker_perf_tabs),
+            row(stake_status_tabs, optimization_tabs),
+            footer,
+            sizing_mode="stretch_width"
+        )
+
+        # Esporta la pagina
+        output_file(output_path, title="Finance Dashboard")
+        save(layout, title="Finance Dashboard")

@@ -1,50 +1,39 @@
 # app.py
-from bokeh.io import curdoc
-from bokeh.layouts import layout
+from flask import Flask, render_template
+from bokeh.resources import INLINE
+from finance_dashboard.bokeh_app import create_dashboard
+from config import DATA_DIR, TICKER_DATA_DIR, TICKERS_PATH, TRANSACTIONS_PATH
 from portfolio_analysis.core.portfolio.portfolio import Portfolio
 from portfolio_analysis.core.portfolio.tickers import Tickers
-from portfolio_analysis.scripts.constants.paths import TICKER_DATA_DIR, DATA_DIR
 from portfolio_analysis.scripts.utils.os_manager import ensure_folder
-from portfolio_analysis.scripts.visualization.dashboard import FinanceDashboard
-from portfolio_analysis.scripts.visualization.panel import tab_figures
 from portfolio_analysis.scripts.utils.logging import setup_logger
+
+app = Flask(__name__)
 
 # Configura il logger
 logger = setup_logger('App')
-
-# Percorsi ai file di configurazione
-TICKERS_PATH = 'tickers_test.json'          # Sostituisci con il percorso corretto
-TRANSACTIONS_PATH = 'transactions_test.json'  # Sostituisci con il percorso corretto
 
 # Assicurati che le cartelle necessarie esistano
 ensure_folder(DATA_DIR)
 ensure_folder(TICKER_DATA_DIR)
 
-# Inizializza i tuoi oggetti Portfolio e Tickers
-tickers = Tickers(TICKERS_PATH, TICKER_DATA_DIR)
-portfolio = Portfolio(TRANSACTIONS_PATH)
+@app.route('/')
+def index():
+    try:
+        # Crea le figure Bokeh
+        plots = create_dashboard()
 
-# Crea l'istanza del dashboard
-dashboard = FinanceDashboard(tickers, portfolio)
+        # Recupera le risorse Bokeh
+        bokeh_js = INLINE.render_js()
+        bokeh_css = INLINE.render_css()
 
-# Opzionale: Aggiorna i dati se necessario
-# tickers.update_tickers_data()
+        return render_template('index.html',
+                               bokeh_js=bokeh_js,
+                               bokeh_css=bokeh_css,
+                               plots=plots)
+    except Exception as e:
+        logger.error(f"Errore nell'inizializzazione del dashboard: {e}")
+        return render_template('500.html'), 500
 
-# Crea i vari tab
-fig = tab_figures({
-    'Stake': dashboard.stake_status_plot(),
-    "History": dashboard.ticker_data_plot(),
-    'Performance': dashboard.ticker_performance_plot(),
-    "Optimization": dashboard.portfolio_optimization()
-})
-
-# Organizza i tab in un layout
-main_layout = layout([
-    [fig]
-])
-
-# Aggiungi il layout al documento corrente
-curdoc().add_root(main_layout)
-curdoc().title = "Finance Dashboard"
-
-logger.info('Finance Dashboard avviato sul Bokeh Server.')
+if __name__ == '__main__':
+    app.run(debug=True)
