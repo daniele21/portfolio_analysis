@@ -98,7 +98,7 @@ class Tickers:
 
         returns_dict = {}
         for ticker in tickers_dict:
-            returns_dict[ticker] = tickers_dict[ticker].pct_change(freq=freq).dropna()
+            returns_dict[ticker] = tickers_dict[ticker].pct_change().dropna()
 
         return returns_dict
 

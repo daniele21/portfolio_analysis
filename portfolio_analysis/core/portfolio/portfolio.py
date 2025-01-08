@@ -1,6 +1,8 @@
 import os
+from datetime import datetime, timedelta
 from typing import Text
 
+import numpy as np
 import pandas as pd
 
 from portfolio_analysis.core.portfolio.ticker import Ticker
@@ -119,7 +121,8 @@ class Portfolio:
         portfolio_performance['cum_spent'] = portfolio_performance[cum_spent_cols].sum(axis=1)
         portfolio_performance['potential_gain'] = portfolio_performance[pot_gain_cols].sum(axis=1)
 
-        portfolio_performance['performance'] = portfolio_performance['potential_gain'] / portfolio_performance['cum_spent']
+        portfolio_performance['performance'] = portfolio_performance['potential_gain'] / portfolio_performance[
+            'cum_spent']
 
         return portfolio_performance
 
@@ -213,6 +216,96 @@ class Portfolio:
 
         return etf_risk_stake
 
+    def compute_kpis(self, tickers: Tickers):
+        """Compute KPIs dynamically from the portfolio data."""
+        portfolio_performance = self.get_portfolio_performance(tickers)
+
+        # Portfolio Return
+        final_value = portfolio_performance['potential_gain'].iloc[-1]
+        initial_investment = portfolio_performance['cum_spent'].iloc[0]
+        portfolio_return = (final_value - initial_investment) / initial_investment * 100
+
+        # Portfolio Volatility
+        portfolio_volatility = portfolio_performance['performance'].std() * 100
+
+        # Sharpe Ratio (assuming a risk-free rate of 3%)
+        risk_free_rate = 0.03
+        avg_return = portfolio_performance['performance'].mean()
+        sharpe_ratio = (avg_return - risk_free_rate) / portfolio_volatility if portfolio_volatility != 0 else 0
+
+        # Amount Spent
+        total_spent = self.get_amount_spent()
+
+        return {
+            "return": f"{portfolio_return:.2f}%",
+            "volatility": f"{portfolio_volatility:.2f} %",
+            "sharpe_ratio": f"{sharpe_ratio:.2f}",
+            "amount_spent": f"€ {total_spent:.0f}"
+        }
+
+    def compute_portfolio_risk(self, weights: np.ndarray, cov_matrix: np.ndarray):
+        """
+        Compute the portfolio risk (standard deviation).
+
+        :param weights: Array of portfolio weights.
+        :param cov_matrix: Covariance matrix of returns.
+        :return: Portfolio risk.
+        """
+        portfolio_variance = np.dot(weights.T, np.dot(cov_matrix, weights))
+        portfolio_std_dev = np.sqrt(portfolio_variance)
+        return portfolio_std_dev
+
+    def compute_risk_contributions(self, weights: np.ndarray, cov_matrix: np.ndarray):
+        """
+        Compute the risk contributions of each asset to the portfolio.
+
+        :param weights: Array of portfolio weights.
+        :param cov_matrix: Covariance matrix of returns.
+        :return: Risk contributions as a percentage.
+        """
+        portfolio_std_dev = self.compute_portfolio_risk(weights, cov_matrix)
+        marginal_contributions = np.dot(cov_matrix, weights) / portfolio_std_dev
+        risk_contributions = weights * marginal_contributions
+        return risk_contributions / portfolio_std_dev
+
+    def compute_portfolio_risk_and_contributions(self, tickers, start_date=None):
+        """
+        Compute portfolio risk and contributions for all assets.
+
+        :param tickers: Tickers object containing asset data.
+        :return: Portfolio risk and risk contributions.
+        """
+        # Get returns and covariance matrix
+        if start_date is None:
+            start_date = (datetime.today() - timedelta(days=365)).strftime('%Y-%m-%d')
+
+        returns_dict = tickers.get_tickers_return_dict(start_date=start_date)
+        returns_df = pd.DataFrame(returns_dict)
+        returns_df = returns_df.fillna(method='ffill')
+        cov_matrix = returns_df.cov().fillna(0).to_numpy()
+
+        # Get portfolio weights
+        total_spent = self.get_amount_spent()
+        weights = np.array([
+            self.get_ticker_transactions(ticker_id=ticker_id)['spent'].sum() / total_spent
+            for ticker_id in tickers.get_ticker_ids()
+        ])
+
+        # Compute portfolio risk (standard deviation)
+        portfolio_variance = np.dot(weights.T, np.dot(cov_matrix, weights))
+        portfolio_risk = np.sqrt(portfolio_variance)
+
+        # Compute individual risk contributions
+        marginal_contributions = np.dot(cov_matrix, weights) / portfolio_risk
+        risk_contributions = {
+            ticker: weight * marginal_contributions[i] / portfolio_risk
+            for i, (ticker, weight) in enumerate(zip(tickers.get_ticker_ids(), weights))
+        }
+
+        return portfolio_risk, risk_contributions
+
     def save_transactions(self):
         self.transactions.to_csv(self.transactions_path)
         logger.info(f' > Saving transactions at {self.transactions_path}')
+
+

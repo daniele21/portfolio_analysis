@@ -1,0 +1,13 @@
+Operation,Date,Valuta,Type,Ticker,Quantity
+Buy,06/06/2024,10/06/2024,eVISO,EVISO.MI,201
+Buy,19/04/2024,23/04/2024,eVISO,EVISO.MI,45
+Buy,09/01/2024,11/01/2024,iShares MSCI World Quality Factor UCITS ETF,IWQU.MI,93
+Buy,09/01/2024,11/01/2024,WisdomTree Global Quality Dividend Growth UCITS ETF,GGRW.L,152
+Buy,20/04/2023,24/04/2023,SPDR S&P U.S. Consumer Staples Select Sector UCITS ETF,SXLP.MI,44
+Buy,20/04/2023,24/04/2023,Franklin FTSE China UCITS ETF,FLXC.MI,62
+Buy,20/04/2023,24/04/2023,iShares MSCI Europe Quality Factor UCITS ETF,IEQU.MI,165
+Buy,20/04/2023,24/04/2023,iShares MSCI World Quality Factor UCITS ETF,IWQU.MI,116
+Buy,08/02/2023,10/02/2023,SPDR S&P U.S. Consumer Staples Select Sector UCITS ETF,SXLP.MI,44
+Buy,08/02/2023,10/02/2023,Franklin FTSE China UCITS ETF,FLXC.MI,62
+Buy,08/02/2023,10/02/2023,iShares MSCI Europe Quality Factor UCITS ETF,IEQU.MI,164
+Buy,08/02/2023,10/02/2023,iShares MSCI World Quality Factor UCITS ETF,IWQU.MI,115
