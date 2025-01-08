@@ -1,8 +1,5 @@
 import yfinance as yf
-from datetime import datetime
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
 
 
 class TickerAnalysis:
@@ -11,15 +8,19 @@ class TickerAnalysis:
         self.start_date = start_date
         self.end_date = end_date
         self.data = {}
+        self.fetch_fundamental_data()
 
     def fetch_data(self):
         """
         Fetch historical price data (Open, High, Low, Close, Adj Close, Volume)
         for all tickers between self.start_date and self.end_date.
-        Store results in self.data, a dict keyed by ticker, where each value
-        is a DataFrame with a DateTimeIndex.
+        Store results in self.data, a dict keyed by the full name of the ticker
+        (if available), where each value is a DataFrame with a DateTimeIndex.
         """
         try:
+            # Fetch fundamental data to get full names
+            self.fetch_fundamental_data()
+
             # Download data in a single call
             raw_data = yf.download(
                 self.tickers,
@@ -40,12 +41,15 @@ class TickerAnalysis:
                     if ticker in raw_data.columns.get_level_values(0):
                         df_ticker = raw_data[ticker].dropna(how='all')
                         if not df_ticker.empty:
+                            # Use full name as key if available
+                            full_name = self.fundamentals.get(ticker, {}).get("Full Name", ticker)
+                            df_ticker.insert(df_ticker.shape[1], 'title', full_name)
                             self.data[ticker] = df_ticker
             else:
                 # Single-ticker scenario
-                # rename columns slightly for consistency
                 raw_data.columns = [col.title() for col in raw_data.columns]
-                self.data[self.tickers[0]] = raw_data.dropna(how='all')
+                full_name = self.fundamentals.get(self.tickers[0], {}).get("Full Name", self.tickers[0])
+                self.data[full_name] = raw_data.dropna(how='all')
 
             if not self.data:
                 raise ValueError("No valid data was found for the tickers.")
@@ -94,6 +98,73 @@ class TickerAnalysis:
 
         return performance
 
+    def fetch_fundamental_data(self):
+        """
+        Fetch fundamental data (like financials, balance sheet, income statement,
+        cashflow, market cap, PE ratio, sector, etc.) for all tickers.
+        Store results in self.fundamentals, a dict keyed by ticker.
+        """
+        self.fundamentals = {}
+        for ticker in self.tickers:
+            try:
+                stock = yf.Ticker(ticker)
+
+                # Extract relevant data
+                self.fundamentals[ticker] = {
+                    # General Information
+                    "Quote Type": stock.info.get("quoteType"),  # Asset type: ETF, Equity, Bond, etc.
+                    "Sector": stock.info.get("sector"),
+                    "Industry": stock.info.get("industry"),
+                    "Country": stock.info.get("country"),
+                    "Full Name": stock.info.get("longName"),
+                    "Symbol": stock.info.get("symbol"),
+                    "Exchange": stock.info.get("exchange"),
+                    "Currency": stock.info.get("currency"),
+                    # Financial Metrics
+                    # "Market Cap": stock.info.get("marketCap"),
+                    # "PE Ratio (Trailing)": stock.info.get("trailingPE"),
+                    # "PE Ratio (Forward)": stock.info.get("forwardPE"),
+                    # "EPS (Trailing)": stock.info.get("trailingEps"),
+                    # "Dividend Yield": stock.info.get("dividendYield"),
+                    # "Beta": stock.info.get("beta"),
+                    # "Revenue (TTM)": stock.info.get("totalRevenue"),
+                    # "Net Income (TTM)": stock.income_stmt.loc["Net Income"].sum()
+                    # if "Net Income" in stock.income_stmt.index else None,
+                    # "Debt to Equity": stock.info.get("debtToEquity"),
+                    # "Profit Margins": stock.info.get("profitMargins"),
+                    # "Free Cash Flow": stock.info.get("freeCashflow"),
+                    # # Technical Information
+                    # "52 Week High": stock.info.get("fiftyTwoWeekHigh"),
+                    # "52 Week Low": stock.info.get("fiftyTwoWeekLow"),
+                    # "200 Day Average": stock.info.get("twoHundredDayAverage"),
+                    # "50 Day Average": stock.info.get("fiftyDayAverage"),
+                    # # Financial Statements
+                    # "Income Statement": stock.income_stmt,
+                    # "Balance Sheet": stock.balance_sheet,
+                    # "Cash Flow Statement": stock.cashflow,
+                    # # Quarterly Financials
+                    # "Quarterly Income Statement": stock.quarterly_income_stmt,
+                    # "Quarterly Balance Sheet": stock.quarterly_balance_sheet,
+                    # "Quarterly Cash Flow Statement": stock.quarterly_cashflow,
+                    # # ESG and Sustainability
+                    # "Sustainability": stock.sustainability,
+                    # # Recommendations
+                    # "Recommendations": stock.recommendations,
+                    # # Holders
+                    # "Major Holders": stock.major_holders,
+                    # "Institutional Holders": stock.institutional_holders,
+                    # # Dividends and Splits
+                    # "Dividends": stock.dividends,
+                    # "Splits": stock.splits,
+                    # # Options
+                    # "Options Expirations": stock.options
+                }
+
+
+            except Exception as e:
+                self.fundamentals[ticker] = {"Error": str(e)}
+
+        # return self.fundamentals
 
 class PortfolioAnalysis:
     def __init__(self, transactions, ticker_data):
@@ -126,6 +197,7 @@ class PortfolioAnalysis:
         performance = {}
         for ticker, df_prices in self.ticker_data.items():
             df_perf = df_prices.copy()
+            title = df_prices['title'].iloc[-1]
             df_perf['Quantity Held'] = 0
             df_perf['Cost Basis'] = 0.0
             df_perf['Unrealized Gains'] = 0.0
@@ -167,6 +239,7 @@ class PortfolioAnalysis:
                     df_perf.loc[date, 'Performance'] = (market_value - total_cost) / total_cost if total_cost > 0 else 0
 
             df_perf['Ticker'] = ticker
+            df_perf['Title'] = title
             performance[ticker] = df_perf.reset_index().rename(columns={'index': 'Date'})
 
         # --- STEP 2: Aggregate into a single portfolio DataFrame ---
@@ -211,32 +284,6 @@ class PortfolioAnalysis:
 
         return portfolio, performance
 
-
-def create_line_chart(portfolio):
-    """Plot the portfolio value over time."""
-    fig = px.line(portfolio, x='Date', y='Total Value', title='Portfolio Value Over Time')
-    fig.update_layout(xaxis_title="Date", yaxis_title="Total Value (€)", hovermode="x unified")
-    return fig
-
-
-def create_pie_chart(allocation):
-    """Plot the current portfolio allocation."""
-    fig = px.pie(allocation, names='Ticker', values='Market Value', title='Current Portfolio Allocation')
-    return fig
-
-
-def create_bar_chart(allocation):
-    """Plot realized and unrealized gains as a bar chart."""
-    fig = go.Figure(data=[
-        go.Bar(name='Value', x=allocation['Ticker'], y=allocation['Unrealized Gain/Loss'], marker_color='blue')
-    ])
-    fig.update_layout(
-        title="Value by Ticker",
-        xaxis_title="Ticker",
-        yaxis_title="Amount (€)",
-        barmode='group'
-    )
-    return fig
 
 
 def calculate_kpis(portfolio_performance, portfolio_ticker_performance, allocation_df):
