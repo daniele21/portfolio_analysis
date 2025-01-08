@@ -6,20 +6,27 @@ import plotly.graph_objects as go
 
 def create_transaction_annotated_line_chart(portfolio, transactions, ticker_data):
     """
-    Create a line chart of portfolio performance with annotations for buy/sell events.
+    Create a line chart of portfolio performance (percentage) with annotations for buy/sell events,
+    ensuring markers on the same date are slightly offset and only one legend entry per type (Buy/Sell).
     """
+    import plotly.graph_objects as go
+
     fig = go.Figure()
 
-    # Line chart for portfolio value
+    # Line chart for portfolio performance
     fig.add_trace(go.Scatter(
         x=portfolio['Date'],
-        y=portfolio['Total Value'],
+        y=portfolio['Performance'],
         mode='lines',
-        name='Portfolio Value (€)',
+        name='Portfolio Performance (%)',
         line=dict(color='blue', width=2)
     ))
 
-    # Add buy/sell markers
+    # Add buy/sell markers with slight vertical offsets
+    marker_offsets = {}  # Dictionary to track offsets for each date
+    first_buy = True
+    first_sell = True
+
     for ticker in transactions['Ticker'].unique():
         ticker_txns = transactions[transactions['Ticker'] == ticker]
         ticker_prices = ticker_data[ticker]
@@ -28,34 +35,56 @@ def create_transaction_annotated_line_chart(portfolio, transactions, ticker_data
         for _, txn in ticker_txns.iterrows():
             event = txn['Operation'].lower()
             txn_date = txn['Date']
-            price = ticker_prices.loc[txn_date, 'Close'] if txn_date in ticker_prices.index else None
+            performance_value = portfolio.loc[portfolio['Date'] == txn_date, 'Performance'].values[0] \
+                if txn_date in portfolio['Date'].values else None
 
-            if pd.notna(price):
+            if pd.notna(performance_value):
+                # Adjust y-value if the date already has markers
+                if txn_date in marker_offsets:
+                    marker_offsets[txn_date] += 5  # Increment offset for subsequent markers
+                else:
+                    marker_offsets[txn_date] = 0  # Initialize offset for the date
+
+                adjusted_performance_value = performance_value + marker_offsets[txn_date]
+
+                # Determine whether to show the legend for this marker
+                showlegend = False
+                if event == 'buy' and first_buy:
+                    showlegend = True
+                    first_buy = False
+                elif event == 'sell' and first_sell:
+                    showlegend = True
+                    first_sell = False
+
                 fig.add_trace(go.Scatter(
                     x=[txn_date],
-                    y=[portfolio.loc[portfolio['Date'] == txn_date, 'Total Value'].values[0]],
+                    y=[adjusted_performance_value],
                     mode='markers+text',
-                    name=f"{event.capitalize()} {ticker}",
+                    name="Buy" if event == "buy" else "Sell",
                     marker=dict(
                         size=10,
                         color='green' if event == 'buy' else 'red',
                         symbol='triangle-up' if event == 'buy' else 'triangle-down'
                     ),
                     text=f"{event.capitalize()} {ticker}",
-                    textposition="top center"
+                    textposition="top center",
+                    showlegend=showlegend  # Show legend only for the first Buy/Sell
                 ))
 
     # Layout settings
     fig.update_layout(
-        title="Portfolio Value Over Time with Transactions",
+        title="Portfolio Performance Over Time with Transactions",
         xaxis_title="Date",
-        yaxis_title="Total Value (€)",
+        yaxis_title="Performance (%)",
         template="plotly_white",
         hovermode="x unified",
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
 
     return fig
+
+
+
 
 
 def plot_close_price_with_transactions(ticker, portfolio_ticker_performance, transactions):
