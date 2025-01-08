@@ -126,9 +126,11 @@ def plot_close_price_with_transactions(ticker, portfolio_ticker_performance, tra
 
 def plot_unrealized_gains(ticker, portfolio_ticker_performance, transactions):
     """
-    Plot unrealized gains (€) and cumulative percentage of unrealized gains for a specific ticker,
-    with Buy/Sell transaction markers grouped under one legend entry.
+    Plot only the cumulative percentage of unrealized gains for a specific ticker,
+    with Buy/Sell transaction markers aligned with the Performance Line and a single legend entry for each.
     """
+    import plotly.graph_objects as go
+
     # Extract the portfolio performance data for the selected ticker
     if ticker not in portfolio_ticker_performance:
         raise ValueError(f"No performance data found for ticker {ticker}")
@@ -138,19 +140,10 @@ def plot_unrealized_gains(ticker, portfolio_ticker_performance, transactions):
     # Calculate cumulative percentage of unrealized gains
     df['Cumulative Unrealized Gain (%)'] = (df['Unrealized Gains'] / df['Cost Basis']) * 100
 
-    # Add transaction markers
+    # Filter transactions for the selected ticker
     ticker_txns = transactions[transactions['Ticker'] == ticker]
 
     fig = go.Figure()
-
-    # Plot unrealized gains
-    # fig.add_trace(go.Scatter(
-    #     x=df['Date'],
-    #     y=df['Unrealized Gains'],
-    #     mode='lines',
-    #     name='Holding Value (€)',
-    #     line=dict(color='orange', width=2, dash='dash')
-    # ))
 
     # Plot cumulative percentage of unrealized gains
     fig.add_trace(go.Scatter(
@@ -158,49 +151,51 @@ def plot_unrealized_gains(ticker, portfolio_ticker_performance, transactions):
         y=df['Cumulative Unrealized Gain (%)'],
         mode='lines',
         name='Performance',
-        yaxis='y2',
-        line=dict(color='green', width=2, dash='dot')
+        line=dict(color='blue', width=2)
     ))
 
-    # Add buy/sell markers
+    # Add buy/sell markers aligned with the performance line
     first_buy = True
     first_sell = True
+
     for _, txn in ticker_txns.iterrows():
         event = txn['Operation'].lower()
         txn_date = txn['Date']
-        unrealized_gain = df.loc[df['Date'] == txn_date, 'Unrealized Gains'].iloc[0] if txn_date in df['Date'].values else None
+        performance_value = df.loc[df['Date'] == txn_date, 'Cumulative Unrealized Gain (%)'].iloc[0] \
+            if txn_date in df['Date'].values else None
 
-        if pd.notna(unrealized_gain):
+        if pd.notna(performance_value):
+            marker_symbol = 'triangle-up' if event == 'buy' else 'triangle-down'
+            marker_color = 'green' if event == 'buy' else 'red'
+
             fig.add_trace(go.Scatter(
                 x=[txn_date],
-                y=[unrealized_gain],
+                y=[performance_value],  # Align with Performance Line
                 mode='markers+text',
-                name="Buy" if event == "buy" and first_buy else "Sell" if event == "sell" and first_sell else None,
+                name=f"{event.capitalize()}" if (event == 'buy' and first_buy) or (event == 'sell' and first_sell) else None,
                 marker=dict(
-                    size=10,
-                    color='green' if event == 'buy' else 'red',
-                    symbol='triangle-up' if event == 'buy' else 'triangle-down'
+                    size=12,
+                    color=marker_color,
+                    symbol=marker_symbol,
                 ),
                 text=f"{event.capitalize()}",
                 textposition="top center",
-                showlegend=first_buy if event == "buy" else first_sell
+                showlegend=first_buy if event == 'buy' else first_sell
             ))
+
             # Ensure only the first "Buy" and "Sell" appear in the legend
-            if event == "buy":
+            if event == 'buy':
                 first_buy = False
-            elif event == "sell":
+            elif event == 'sell':
                 first_sell = False
 
     # Layout settings
     fig.update_layout(
-        title=f"Unrealized Gains and Cumulative % for {ticker}",
+        title=f"Cumulative Unrealized Gain (%) for {ticker}",
         xaxis_title="Date",
-        # yaxis=dict(title="Unrealized Gains (€)"),
         yaxis=dict(
             title="Cumulative Unrealized Gain (%)",
-            overlaying="y",
-            side="right",
-            showgrid=False
+            showgrid=True
         ),
         template="plotly_white",
         hovermode="x unified",
@@ -208,6 +203,10 @@ def plot_unrealized_gains(ticker, portfolio_ticker_performance, transactions):
     )
 
     return fig
+
+
+
+
 
 
 
