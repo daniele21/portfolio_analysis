@@ -1,9 +1,7 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
 from datetime import datetime
-
+from streamlit.components.v1 import html
 from portfolio_analysis.scripts.data.portfolio import PortfolioAnalysis, TickerAnalysis, calculate_kpis
 from portfolio_analysis.scripts.visualization.plots import create_pie_chart, create_bar_chart, \
     create_ticker_performance_chart, create_transaction_annotated_line_chart
@@ -83,20 +81,25 @@ if uploaded_file:
     # elif menu == "Contact":
     #     st.header("Contact Us")
     #     st.write("Email: contact@example.com")
-    st.markdown(
-        """
-        <!-- Google tag (gtag.js) -->
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-PD5M9GFY26"></script>
+
+    # Embed Google Analytics script into the <head> tag
+    html("""
         <script>
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-        
-          gtag('config', 'G-PD5M9GFY26');
+            const scriptTag = document.createElement('script');
+            scriptTag.src = "https://www.googletagmanager.com/gtag/js?id=G-PD5M9GFY26";
+            scriptTag.async = true;
+            document.head.appendChild(scriptTag);
+
+            const configScript = document.createElement('script');
+            configScript.innerHTML = `
+                window.dataLayer = window.dataLayer || [];
+                function gtag() { dataLayer.push(arguments); }
+                gtag('js', new Date());
+                gtag('config', 'G-PD5M9GFY26');
+            `;
+            document.head.appendChild(configScript);
         </script>
-        """,
-        unsafe_allow_html=True,
-    )
+    """, height=0)
     # st.sidebar.header("Contact Us")
     # st.sidebar.write("Email: example@domain.com")
     # st.sidebar.write("Phone: +123456789")
