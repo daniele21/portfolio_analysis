@@ -117,13 +117,13 @@ class Ticker:
         df = self.data.copy()
         df["Daily Return (%)"] = df["Close"].pct_change() * 100
         df["Daily Absolute Change"] = df["Close"].diff()
-        df["Cumulative Return (%)"] = (1 + df["Close"].pct_change()).cumprod() - 1
 
         self.data = df
         return self.data
 
     def __repr__(self):
         return f"<Ticker {self.symbol} ({self.title})>"
+
 
 
 # ----------------------------------------------
@@ -184,3 +184,4 @@ class TickerCollection:
 
     def __repr__(self):
         return f"<TickerCollection {list(self.tickers_map.keys())}>"
+

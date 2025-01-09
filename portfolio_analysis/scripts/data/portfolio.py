@@ -72,7 +72,7 @@ class Portfolio:
             df_prices["Unrealized Gains"] = 0.0
             df_prices["Realized Gains"] = 0.0
             df_prices["Market Value"] = 0.0
-            df_prices["Performance"] = 0.0
+            df_prices["Performance (%)"] = 0.0
             df_prices["Ticker"] = symbol
             df_prices["Title"] = ticker.title
             df_prices["AssetType"] = ticker.asset_type or "Unknown"
@@ -117,7 +117,7 @@ class Portfolio:
                     df_prices.loc[dt, "Unrealized Gains"] = mv - total_cost
                     # Basic performance as (MV - cost) / cost
                     if total_cost > 0:
-                        df_prices.loc[dt, "Performance"] = (mv - total_cost) / total_cost
+                        df_prices.loc[dt, "Performance (%)"] = 100*(mv - total_cost) / total_cost
 
             all_tickers_perf[symbol] = df_prices.reset_index().rename(columns={"index": "Date"})
 
@@ -308,7 +308,7 @@ class Portfolio:
 
             df_temp["Daily Ticker Return"] = df_temp["Performance"]  # Performance is fraction, e.g. 0.05 = 5%
             df_temp["WeightInPortfolio"] = (
-                df_temp["Market Value"] / portfolio_df["Total Value"]
+                    df_temp["Market Value"] / portfolio_df["Total Value"]
             )
 
             # Ticker's contribution on each day = daily_return * weight
@@ -350,8 +350,6 @@ class Portfolio:
 
     def __repr__(self):
         return f"<Portfolio name={self.name}, Transactions={len(self.transactions)}>"
-
-
 
 
 class TickerAnalysis:
