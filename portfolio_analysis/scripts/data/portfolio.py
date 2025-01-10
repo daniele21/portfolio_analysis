@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Any
 
 import pandas as pd
 import yfinance as yf
@@ -636,43 +636,62 @@ class PortfolioAnalysis:
 
 
 
-def calculate_kpis(portfolio_performance, portfolio_ticker_performance, allocation_df):
-    """Calculate key performance indicators for the portfolio."""
-    # Current portfolio total value
-    total_value = portfolio_performance['Total Value'].iloc[-1]
-    performance = portfolio_performance['Performance'].iloc[-1]
-
-    # Total unrealized and realized gains
-    unrealized_gains = allocation_df['Unrealized Gains'].sum()
-    realized_gains = allocation_df['Realized Gains'].sum()
+def calculate_kpis(portfolio_df: pd.DataFrame,
+                   allocation_df: pd.DataFrame,
+                   all_tickers_perf: Dict[str, pd.DataFrame]) -> Dict[str, Any]:
+    """
+    Calculate key performance indicators for the portfolio.
+    :param portfolio_df: The aggregated portfolio performance DataFrame.
+    :param allocation_df: A DataFrame with columns like
+                          [Ticker, Quantity Held, Market Value, Unrealized Gains, Realized Gains].
+    :param all_tickers_perf: Dict keyed by ticker, each DataFrame has 'Performance' or 'Performance (%)'.
+    """
+    total_value = portfolio_df["Total Value"].iloc[-1]
+    performance_pct = portfolio_df["Performance (%)"].iloc[-1]
+    unrealized_gains = allocation_df["Unrealized Gains"].sum()
+    realized_gains = allocation_df["Realized Gains"].sum()
 
     # Daily change in portfolio value
-    if len(portfolio_performance) > 1:
-        previous_value = portfolio_performance['Total Value'].iloc[-2]
-        daily_change = ((total_value - previous_value) / previous_value) * 100
+    if len(portfolio_df) > 1:
+        prev_value = portfolio_df["Total Value"].iloc[-2]
+        daily_change = ((total_value - prev_value) / prev_value) * 100 if prev_value else 0
     else:
         daily_change = 0
 
-    # Best and worst performing tickers
-    best_ticker = allocation_df.loc[allocation_df['Unrealized Gains'].idxmax()]
-    worst_ticker = allocation_df.loc[allocation_df['Unrealized Gains'].idxmin()]
+    # Identify best/worst ticker (by unrealized gains)
+    best_ticker_row = allocation_df.loc[allocation_df["Unrealized Gains"].idxmax()]
+    worst_ticker_row = allocation_df.loc[allocation_df["Unrealized Gains"].idxmin()]
 
-    best_perf = 100*portfolio_ticker_performance[best_ticker['Ticker']]['Performance'].iloc[-1]
-    worst_perf = 100*portfolio_ticker_performance[worst_ticker['Ticker']]['Performance'].iloc[-1]
+    best_ticker_symbol = best_ticker_row["Ticker"]
+    worst_ticker_symbol = worst_ticker_row["Ticker"]
 
-    best_ticker = {'ticker': best_ticker['Ticker'],
-                   'unrealized_gains': best_ticker['Unrealized Gains'],
-                   'performance': best_perf}
-    worst_ticker = {'ticker': worst_ticker['Ticker'],
-                    'unrealized_gains': worst_ticker['Unrealized Gains'],
-                   'performance': worst_perf}
+    # If your all_tickers_perf includes a "Performance" or "Performance (%)" column,
+    # you can also compare that here. For example:
+    best_perf_df = all_tickers_perf[best_ticker_symbol]
+    best_perf_col = "Performance" if "Performance" in best_perf_df.columns else "Performance (%)"
+    best_ticker_perf = 100 * best_perf_df[best_perf_col].iloc[-1]  # or best_perf_df["Performance (%)"].iloc[-1]
 
-    portfolio_kpis = {'value': total_value,
-                      'unrealized_gains': unrealized_gains,
-                      'realized_gains': realized_gains,
-                      'performance': performance,
-                      'daily_change': daily_change,
-                      'best_ticker': best_ticker,
-                      'worst_ticker': worst_ticker}
+    worst_perf_df = all_tickers_perf[worst_ticker_symbol]
+    worst_perf_col = "Performance" if "Performance" in worst_perf_df.columns else "Performance (%)"
+    worst_ticker_perf = 100 * worst_perf_df[worst_perf_col].iloc[-1]
 
-    return portfolio_kpis
+    best_ticker = {
+        "ticker": best_ticker_symbol,
+        "unrealized_gains": best_ticker_row["Unrealized Gains"],
+        "performance": best_ticker_perf
+    }
+    worst_ticker = {
+        "ticker": worst_ticker_symbol,
+        "unrealized_gains": worst_ticker_row["Unrealized Gains"],
+        "performance": worst_ticker_perf
+    }
+
+    return {
+        "value": total_value,
+        "unrealized_gains": unrealized_gains,
+        "realized_gains": realized_gains,
+        "performance": performance_pct,
+        "daily_change": daily_change,
+        "best_ticker": best_ticker,
+        "worst_ticker": worst_ticker,
+    }

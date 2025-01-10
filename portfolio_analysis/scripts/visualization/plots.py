@@ -85,6 +85,134 @@ def create_transaction_annotated_line_chart(portfolio_df, transactions, name_col
     return fig
 
 
+def plot_performance_with_annotations(
+        portfolio_df=None,
+        items=None,
+        transactions=None,
+        date_col="Date",
+        perf_col="Performance",
+        portfolio_label="Portfolio",
+        item_labels=None,
+        title="Performance Over Time"
+):
+    """
+    Generalized function to plot performance over time for:
+      - A portfolio (single line) with buy/sell annotations.
+      - Multiple items (e.g., tickers or benchmarks).
+
+    :param portfolio_df: DataFrame for the portfolio with [date_col, perf_col] (optional).
+    :param items: Dict of symbol -> DataFrame, each with [date_col, perf_col] (optional).
+    :param transactions: DataFrame with at least ['Operation', date_col, 'Ticker'] (optional).
+                         Used for annotating buy/sell events.
+    :param date_col: Column name for the date (default: 'Date').
+    :param perf_col: Column name for the performance metric (default: 'Performance').
+    :param portfolio_label: Legend label for the portfolio line (if portfolio_df is provided).
+    :param item_labels: List of labels for items in `items`. Defaults to item keys.
+    :param title: Title for the chart (default: "Performance Over Time").
+    """
+    fig = go.Figure()
+
+    # 1) Plot the portfolio line
+    if portfolio_df is not None:
+        if date_col not in portfolio_df.columns or perf_col not in portfolio_df.columns:
+            raise ValueError(f"Portfolio DataFrame must contain '{date_col}' and '{perf_col}' columns.")
+        fig.add_trace(go.Scatter(
+            x=portfolio_df[date_col],
+            y=portfolio_df[perf_col],
+            mode='lines',
+            name=portfolio_label,
+            line=dict(color='blue', width=3)
+        ))
+
+    # 2) Handle multiple items (e.g., tickers or benchmarks)
+    if items is not None:
+        if item_labels is None:
+            item_labels = list(items.keys())
+
+        if len(items) != len(item_labels):
+            raise ValueError("Length of items and item_labels must match.")
+
+        color_cycle = qc.Plotly  # Color palette
+        for i, (symbol, df_item) in enumerate(items.items()):
+            label = item_labels[i]
+            color = color_cycle[i % len(color_cycle)]
+
+            if date_col not in df_item.columns or perf_col not in df_item.columns:
+                print(f"Skipping {symbol}: missing '{date_col}' or '{perf_col}' in DataFrame.")
+                continue
+
+            fig.add_trace(go.Scatter(
+                x=df_item[date_col],
+                y=df_item[perf_col],
+                mode='lines',
+                name=label,
+                line=dict(color=color, width=2)
+            ))
+
+    # 3) Add transaction markers
+    if transactions is not None:
+        marker_offsets = {}  # Track offsets for markers on the same date
+        first_buy = True
+        first_sell = True
+
+        for _, txn in transactions.iterrows():
+            event = txn["Operation"].lower()
+            txn_date = txn[date_col]
+            ticker = txn.get("Ticker", "Portfolio")
+
+            # Find corresponding y-value for the transaction's date
+            performance_df = portfolio_df if ticker == "Portfolio" else items.get(ticker, None)
+            if performance_df is not None and date_col in performance_df.columns and perf_col in performance_df.columns:
+                performance_slice = performance_df.loc[performance_df[date_col] == txn_date, perf_col]
+
+                if not performance_slice.empty:
+                    performance_value = performance_slice.values[0]
+
+                    # Adjust y-value to avoid overlapping markers
+                    if txn_date in marker_offsets:
+                        marker_offsets[txn_date] += 5
+                    else:
+                        marker_offsets[txn_date] = 0
+
+                    adjusted_val = performance_value + marker_offsets[txn_date]
+
+                    # Show legend only for the first buy/sell
+                    showlegend = False
+                    if event == "buy" and first_buy:
+                        showlegend = True
+                        first_buy = False
+                    elif event == "sell" and first_sell:
+                        showlegend = True
+                        first_sell = False
+
+                    fig.add_trace(go.Scatter(
+                        x=[txn_date],
+                        y=[adjusted_val],
+                        mode='markers+text',
+                        name="Buy" if event == "buy" else "Sell",
+                        marker=dict(
+                            size=10,
+                            color="green" if event == "buy" else "red",
+                            symbol="triangle-up" if event == "buy" else "triangle-down"
+                        ),
+                        text=f"{event.capitalize()} {ticker}",
+                        textposition="top center",
+                        showlegend=showlegend
+                    ))
+
+    # 4) Final layout settings
+    fig.update_layout(
+        title=title,
+        xaxis_title=date_col,
+        yaxis_title=perf_col,
+        template="plotly_white",
+        hovermode="x unified",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
+
+    return fig
+
+
 def plot_close_price_with_transactions(ticker, ticker_performance_df, transactions):
     """
     Plot the close price of a ticker with grouped Buy/Sell transaction markers under a single legend entry.
@@ -400,10 +528,10 @@ def plot_portfolio_vs_benchmark(portfolio_df, benchmark_df,
 
 
 def plot_cumulative_returns(
-    portfolio_df,
-    benchmarks=None,
-    portfolio_label="Portfolio",
-    benchmark_labels=None
+        portfolio_df,
+        benchmarks=None,
+        portfolio_label="Portfolio",
+        benchmark_labels=None
 ):
     """
     Create a line chart showing 'Cumulative Return (%)' over time
@@ -434,7 +562,7 @@ def plot_cumulative_returns(
     if benchmarks is not None:
         # If no labels provided, create default ones
         if benchmark_labels is None:
-            benchmark_labels = [f"Benchmark {i+1}" for i in range(len(benchmarks))]
+            benchmark_labels = [f"Benchmark {i + 1}" for i in range(len(benchmarks))]
 
         if len(benchmarks) != len(benchmark_labels):
             raise ValueError("Length of benchmarks and benchmark_labels must match.")
@@ -456,7 +584,7 @@ def plot_cumulative_returns(
             ).sort_values("Date")
 
             merged.fillna(method='ffill', inplace=True)  # forward-fill
-            merged.fillna(0, inplace=True)               # fallback if forward-fill can't apply
+            merged.fillna(0, inplace=True)  # fallback if forward-fill can't apply
 
             fig.add_trace(go.Scatter(
                 x=merged["Date"],
@@ -477,6 +605,7 @@ def plot_cumulative_returns(
     )
 
     return fig
+
 
 def plot_portfolio_and_tickers_performance(portfolio_df, all_tickers_perf,
                                            portfolio_col='Performance',
@@ -570,17 +699,56 @@ def plot_portfolio_performance(portfolio_df, performance_col='Performance (%)'):
     return fig
 
 
-import plotly.graph_objects as go
-from plotly.express.colors import qualitative as qc
+def plot_single_performance(
+        x, y,
+        color='blue',
+        label="",
+):
+    """
+    Generalized function to plot performance over time for:
+      - A portfolio (single line)
+      - Multiple items (e.g., tickers or benchmarks)
+
+    :param portfolio_df: DataFrame for the portfolio with [date_col, perf_col] (optional).
+    :param items: Dict of symbol -> DataFrame, each DataFrame must have [date_col, perf_col].
+    :param date_col: Column name for the date (default: 'Date').
+    :param perf_col: Column name for the performance metric (default: 'Performance').
+    :param portfolio_label: Legend label for the portfolio line (if portfolio_df is provided).
+    :param item_labels: List of labels for items in `items` (if provided). Defaults to item keys.
+    :param title: Title for the chart (default: "Performance Over Time").
+    """
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatter(
+        x=x,
+        y=y,
+        mode='lines',
+        name=label,
+        line=dict(color=color, width=3)
+    ))
+
+    # 3) Final layout settings
+    # fig.update_layout(
+    #     title=title,
+    #     xaxis_title=date_col,
+    #     yaxis_title=perf_col,
+    #     template="plotly_white",
+    #     hovermode="x unified",
+    #     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    # )
+
+    return fig
+
 
 def plot_performance(
-    portfolio_df=None,
-    items=None,
-    date_col="Date",
-    perf_col="Performance",
-    portfolio_label="Portfolio",
-    item_labels=None,
-    title="Performance Over Time"
+        portfolio_df=None,
+        color='blue',
+        items=None,
+        date_col="Date",
+        perf_col="Performance",
+        portfolio_label="Portfolio",
+        item_labels=None,
+        title="Performance Over Time"
 ):
     """
     Generalized function to plot performance over time for:
@@ -606,7 +774,7 @@ def plot_performance(
             y=portfolio_df[perf_col],
             mode='lines',
             name=portfolio_label,
-            line=dict(color='blue', width=3)
+            line=dict(color=color, width=3)
         ))
 
     # 2) Handle multiple items (e.g., tickers or benchmarks)

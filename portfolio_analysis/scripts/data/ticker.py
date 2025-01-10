@@ -117,6 +117,8 @@ class Ticker:
         df = self.data.copy()
         df["Daily Return (%)"] = df["Close"].pct_change() * 100
         df["Daily Absolute Change"] = df["Close"].diff()
+        df['ticker'] = self.symbol
+        df['title'] = self.title
 
         self.data = df
         return self.data
@@ -170,7 +172,7 @@ class TickerCollection:
         performances = {}
         for symbol, ticker in self.tickers_map.items():
             df_perf = ticker.calculate_performance()
-            performances[symbol] = df_perf
+            performances[symbol] = df_perf.reset_index().rename(columns={'index': 'Date'})
         return performances
 
     def get_ticker_data(self, symbol: str) -> Optional[pd.DataFrame]:
@@ -185,3 +187,79 @@ class TickerCollection:
     def __repr__(self):
         return f"<TickerCollection {list(self.tickers_map.keys())}>"
 
+
+class Benchmark(Ticker):
+    """
+    A Benchmark is a specialized Ticker without transactional data,
+    used for tracking indices or ETF performance.
+    """
+
+    def __init__(self, symbol: str):
+        # Initialize the parent Ticker class
+        super().__init__(symbol)
+
+    def fetch_fundamental_data(self):
+        """
+        Override the fetch_fundamental_data method for benchmarks.
+        Benchmarks may not have the same fundamental data as individual stocks.
+        """
+        try:
+            stock = yf.Ticker(self.symbol)
+            info = stock.info  # Deprecated in yfinance >= 0.2.4, but still works for now
+
+            self.fundamentals = {
+                "Quote Type": info.get("quoteType"),
+                "Sector": info.get("sector"),
+                "Industry": info.get("industry"),
+                "Full Name": info.get("longName"),
+            }
+
+            if self.fundamentals.get("Full Name"):
+                self.title = self.fundamentals["Full Name"]
+            if self.fundamentals.get("Quote Type"):
+                self.asset_type = self.fundamentals["Quote Type"]  # e.g., 'EQUITY'
+            if self.fundamentals.get("Sector"):
+                self.sector = self.fundamentals["Sector"]
+            if self.fundamentals.get("Industry"):
+                self.industry = self.fundamentals["Industry"]
+
+        except Exception as e:
+            self.fundamentals = {"Error": str(e)}
+
+
+    def calculate_performance(self) -> pd.DataFrame:
+        """
+        Override performance calculation if needed.
+        Benchmarks don't have transactional data, so cumulative return
+        is directly derived from price changes.
+        """
+        if self.data.empty or "Close" not in self.data.columns:
+            raise ValueError(f"No price data available for {self.symbol} to calculate performance.")
+
+        # Calculate cumulative returns based on price changes
+        df = self.data.copy()
+        initial_close = df["Close"].iloc[0]
+        df["Performance (Abs)"] = df["Close"] - initial_close
+        df["Performance (%)"] = (df["Close"] / initial_close - 1) * 100
+        df['ticker'] = self.symbol
+        df['title'] = self.title
+
+        self.data = df
+        return self.data
+
+    def __repr__(self):
+        return f"<Benchmark {self.symbol} ({self.title})>"
+
+
+class BenchmarkCollection(TickerCollection):
+    """
+    A collection of Benchmarks, reusing TickerCollection logic with minor adjustments.
+    """
+
+    def __init__(self, symbols: List[str], start_date: date, end_date: date):
+        super().__init__(symbols, start_date, end_date)
+        # Replace Ticker instances with Benchmark instances
+        self.tickers_map = {symbol: Benchmark(symbol) for symbol in symbols}
+
+    def compute_all_ticker_performances(self):
+        return super().calculate_all_ticker_performances()
