@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Dict, List, Any
 
 import pandas as pd
@@ -39,6 +40,155 @@ class Portfolio:
         # Will hold the main portfolio-level DataFrame and per-ticker performance
         self.portfolio_df: pd.DataFrame = pd.DataFrame()
         self.all_tickers_perf: Dict[str, pd.DataFrame] = {}
+
+    def calculate_portfolio_performance_by_date(self, start_date: date, end_date: date):
+        """
+        Calculate the portfolio value over time within a specified date range,
+        taking into account all transactions and the Ticker close prices.
+
+        :param start_date: Start date for the performance calculation.
+        :param end_date: End date for the performance calculation.
+
+        Returns:
+            portfolio (DataFrame): Overall portfolio performance with columns:
+                [Date, Total Value, Cost Basis, Unrealized Gains, Realized Gains, Daily Performance (%), ...]
+            all_tickers_perf (Dict[str, DataFrame]): Detailed Ticker-level performance
+        """
+        # --- 1) Group transactions by ticker for easier iteration ---
+        transactions_by_ticker = {}
+        for txn in self.transactions:
+            # if pd.Timestamp(start_date) <= txn.date <= pd.Timestamp(end_date):
+                transactions_by_ticker.setdefault(txn.ticker_symbol, []).append(txn)
+
+        # Sort each ticker's transactions by date
+        for ticker_symbol in transactions_by_ticker:
+            transactions_by_ticker[ticker_symbol].sort(key=lambda tx: tx.date)
+
+        # --- 2) Build a performance DataFrame for each ticker ---
+        all_tickers_perf = {}
+        for symbol, ticker in self.tickers_map.items():
+            # If we don't have any historical data for this ticker, skip
+            if ticker.data.empty:
+                continue
+
+            # Filter ticker data to the date range
+            df_prices = ticker.data.copy()
+            df_prices = df_prices.loc[(df_prices.index.date >= start_date) & (df_prices.index.date <= end_date)]
+
+            if df_prices.empty:
+                continue
+
+            df_prices["Quantity Held"] = 0.0
+            df_prices["Cost Basis"] = 0.0
+            df_prices["Unrealized Gains"] = 0.0
+            df_prices["Realized Gains"] = 0.0
+            df_prices["Market Value"] = 0.0
+            df_prices["Performance (%)"] = 0.0
+            df_prices["Ticker"] = symbol
+            df_prices["Title"] = ticker.title
+            df_prices["AssetType"] = ticker.asset_type or "Unknown"
+            df_prices["Sector"] = ticker.sector or "Unknown"
+            df_prices["Industry"] = ticker.industry or "Unknown"
+
+            # Go through transactions in chronological order
+            ticker_txns = transactions_by_ticker.get(symbol, [])
+            quantity_held = 0.0
+            total_cost = 0.0
+            realized_gains = 0.0
+            tx_index = 0
+
+            # For each date in this ticker's price data
+            for dt in df_prices.index:
+                # Process all transactions up to (and including) this date
+                while tx_index < len(ticker_txns) and ticker_txns[tx_index].date <= dt:
+                    txn = ticker_txns[tx_index]
+                    price_at_tx = df_prices.loc[dt, "Close"]
+
+                    if txn.operation == "buy":
+                        quantity_held += txn.quantity
+                        total_cost += txn.quantity * price_at_tx
+                    elif txn.operation == "sell":
+                        if quantity_held > 0:
+                            avg_cost = total_cost / quantity_held
+                            # Realized gain for the sold quantity
+                            realized_gains += txn.quantity * (price_at_tx - avg_cost)
+                            quantity_held -= txn.quantity
+                            total_cost -= txn.quantity * avg_cost
+
+                    tx_index += 1
+
+                # Update the columns for today's row
+                df_prices.loc[dt, "Quantity Held"] = quantity_held
+                df_prices.loc[dt, "Cost Basis"] = total_cost
+                df_prices.loc[dt, "Realized Gains"] = realized_gains
+
+                if quantity_held > 0:
+                    mv = quantity_held * df_prices.loc[dt, "Close"]
+                    df_prices.loc[dt, "Market Value"] = mv
+                    df_prices.loc[dt, "Unrealized Gains"] = mv - total_cost
+                    # Basic performance as (MV - cost) / cost
+                    if total_cost > 0:
+                        df_prices.loc[dt, "Performance (%)"] = 100 * (mv - total_cost) / total_cost
+
+            all_tickers_perf[symbol] = df_prices.reset_index().rename(columns={"index": "Date"})
+
+        # --- 3) Aggregate into a single portfolio DataFrame ---
+        # Collect all distinct dates
+        all_dates = sorted(set().union(*(df["Date"] for df in all_tickers_perf.values())))
+        all_dates = [dt for dt in all_dates if start_date <= dt.date() <= end_date]
+
+        portfolio = pd.DataFrame(
+            columns=["Total Value", "Cost Basis", "Unrealized Gains", "Realized Gains", "Daily Performance (%)"],
+            index=all_dates
+        )
+
+        prev_total_value = 0.0
+        for dt in all_dates:
+            total_value = 0.0
+            cost_basis = 0.0
+            unreal_gains_sum = 0.0
+            realized_gains_sum = 0.0
+
+            # Sum across all tickers
+            for symbol, df_perf in all_tickers_perf.items():
+                row_today = df_perf.loc[df_perf["Date"] == dt]
+                if not row_today.empty:
+                    total_value += row_today["Market Value"].values[0]
+                    cost_basis += row_today["Cost Basis"].values[0]
+                    unreal_gains_sum += row_today["Unrealized Gains"].values[0]
+                    realized_gains_sum += row_today["Realized Gains"].values[0]
+
+            portfolio.loc[dt, "Total Value"] = total_value
+            portfolio.loc[dt, "Cost Basis"] = cost_basis
+            portfolio.loc[dt, "Unrealized Gains"] = unreal_gains_sum
+            portfolio.loc[dt, "Realized Gains"] = realized_gains_sum
+
+            # Daily performance % (compared to previous day)
+            if prev_total_value != 0:
+                daily_perf = ((total_value - prev_total_value) / prev_total_value) * 100
+            else:
+                daily_perf = 0.0
+            portfolio.loc[dt, "Daily Performance (%)"] = daily_perf
+
+            prev_total_value = total_value
+
+        # Clean up index
+        portfolio.reset_index(inplace=True)
+        portfolio.rename(columns={"index": "Date"}, inplace=True)
+
+        # Example additional performance metric
+        portfolio["Performance (%)"] = pd.Series(0.0, index=portfolio.index, dtype="float64")
+
+        # Perform the calculation, ensuring the column and operations align with float64
+        portfolio.loc[portfolio["Cost Basis"] > 0, "Performance (%)"] = (
+                portfolio.loc[portfolio["Cost Basis"] > 0, "Unrealized Gains"] /
+                portfolio.loc[portfolio["Cost Basis"] > 0, "Cost Basis"] * 100
+        )
+
+        self.portfolio_df = portfolio
+        self.all_tickers_perf = all_tickers_perf
+
+        return portfolio, all_tickers_perf
 
     def calculate_portfolio_performance(self):
         """
@@ -306,7 +456,7 @@ class Portfolio:
             # df_temp["Daily Ticker Return"] = df_temp["Performance"]  # This is fraction (not %)
             # or we can recast from % if needed
 
-            df_temp["Daily Ticker Return"] = df_temp["Performance"]  # Performance is fraction, e.g. 0.05 = 5%
+            df_temp["Daily Ticker Return"] = df_temp["Performance (%)"]  # Performance is fraction, e.g. 0.05 = 5%
             df_temp["WeightInPortfolio"] = (
                     df_temp["Market Value"] / portfolio_df["Total Value"]
             )
@@ -352,290 +502,6 @@ class Portfolio:
         return f"<Portfolio name={self.name}, Transactions={len(self.transactions)}>"
 
 
-class TickerAnalysis:
-    def __init__(self, tickers, start_date, end_date):
-        self.tickers = tickers
-        self.start_date = start_date
-        self.end_date = end_date
-        self.data = {}
-        self.fetch_fundamental_data()
-
-    def fetch_data(self):
-        """
-        Fetch historical price data (Open, High, Low, Close, Adj Close, Volume)
-        for all tickers between self.start_date and self.end_date.
-        Store results in self.data, a dict keyed by the full name of the ticker
-        (if available), where each value is a DataFrame with a DateTimeIndex.
-        """
-        try:
-            # Fetch fundamental data to get full names
-            self.fetch_fundamental_data()
-
-            # Download data in a single call
-            raw_data = yf.download(
-                self.tickers,
-                start=self.start_date,
-                end=self.end_date,
-                progress=False,
-                group_by='ticker'
-            )
-
-            if raw_data.empty:
-                raise ValueError("No data was fetched for the given tickers and date range.")
-
-            # If multiple tickers, yfinance returns a MultiIndex DataFrame.
-            # If only one ticker, it returns a single-index DataFrame.
-            if isinstance(raw_data.columns, pd.MultiIndex):
-                # Multi-ticker scenario
-                for ticker in self.tickers:
-                    if ticker in raw_data.columns.get_level_values(0):
-                        df_ticker = raw_data[ticker].dropna(how='all')
-                        if not df_ticker.empty:
-                            # Use full name as key if available
-                            full_name = self.fundamentals.get(ticker, {}).get("Full Name", ticker)
-                            df_ticker.insert(df_ticker.shape[1], 'title', full_name)
-                            self.data[ticker] = df_ticker
-            else:
-                # Single-ticker scenario
-                raw_data.columns = [col.title() for col in raw_data.columns]
-                full_name = self.fundamentals.get(self.tickers[0], {}).get("Full Name", self.tickers[0])
-                self.data[full_name] = raw_data.dropna(how='all')
-
-            if not self.data:
-                raise ValueError("No valid data was found for the tickers.")
-
-            # Optional: unify date indexes across all tickers
-            all_dates = pd.date_range(start=self.start_date, end=self.end_date, freq='B')
-            for ticker, df in self.data.items():
-                # Reindex to have a consistent DateTimeIndex for all
-                # and forward-fill missing data if any
-                self.data[ticker] = df.reindex(all_dates).ffill()
-
-            return self.data
-
-        except Exception as e:
-            raise RuntimeError(f"An error occurred while fetching data: {e}")
-
-    def calculate_ticker_performance(self):
-        """
-        For each ticker in self.data, compute:
-        - Daily Return (%)
-        - Daily Absolute Change
-        - Cumulative Return (%)
-
-        Returns a dict keyed by ticker, each containing a DataFrame
-        with columns:
-            [Close, Daily Return (%), Daily Absolute Change, Cumulative Return (%)]
-        """
-        performance = {}
-        for ticker, df in self.data.items():
-            # Work on a copy so we don't alter the original
-            df_perf = df.copy()
-
-            # Calculate daily return and absolute change
-            df_perf['Daily Return (%)'] = df_perf['Close'].pct_change() * 100
-            df_perf['Daily Absolute Change'] = df_perf['Close'].diff()
-
-            # Calculate cumulative returns
-            df_perf['Cumulative Return (%)'] = (1 + df_perf['Close'].pct_change()).cumprod() - 1
-
-            performance[ticker] = df_perf[[
-                'Close',
-                'Daily Return (%)',
-                'Daily Absolute Change',
-                'Cumulative Return (%)'
-            ]]
-
-        return performance
-
-    def fetch_fundamental_data(self):
-        """
-        Fetch fundamental data (like financials, balance sheet, income statement,
-        cashflow, market cap, PE ratio, sector, etc.) for all tickers.
-        Store results in self.fundamentals, a dict keyed by ticker.
-        """
-        self.fundamentals = {}
-        for ticker in self.tickers:
-            try:
-                stock = yf.Ticker(ticker)
-
-                # Extract relevant data
-                self.fundamentals[ticker] = {
-                    # General Information
-                    "Quote Type": stock.info.get("quoteType"),  # Asset type: ETF, Equity, Bond, etc.
-                    "Sector": stock.info.get("sector"),
-                    "Industry": stock.info.get("industry"),
-                    "Country": stock.info.get("country"),
-                    "Full Name": stock.info.get("longName"),
-                    "Symbol": stock.info.get("symbol"),
-                    "Exchange": stock.info.get("exchange"),
-                    "Currency": stock.info.get("currency"),
-                    # Financial Metrics
-                    # "Market Cap": stock.info.get("marketCap"),
-                    # "PE Ratio (Trailing)": stock.info.get("trailingPE"),
-                    # "PE Ratio (Forward)": stock.info.get("forwardPE"),
-                    # "EPS (Trailing)": stock.info.get("trailingEps"),
-                    # "Dividend Yield": stock.info.get("dividendYield"),
-                    # "Beta": stock.info.get("beta"),
-                    # "Revenue (TTM)": stock.info.get("totalRevenue"),
-                    # "Net Income (TTM)": stock.income_stmt.loc["Net Income"].sum()
-                    # if "Net Income" in stock.income_stmt.index else None,
-                    # "Debt to Equity": stock.info.get("debtToEquity"),
-                    # "Profit Margins": stock.info.get("profitMargins"),
-                    # "Free Cash Flow": stock.info.get("freeCashflow"),
-                    # # Technical Information
-                    # "52 Week High": stock.info.get("fiftyTwoWeekHigh"),
-                    # "52 Week Low": stock.info.get("fiftyTwoWeekLow"),
-                    # "200 Day Average": stock.info.get("twoHundredDayAverage"),
-                    # "50 Day Average": stock.info.get("fiftyDayAverage"),
-                    # # Financial Statements
-                    # "Income Statement": stock.income_stmt,
-                    # "Balance Sheet": stock.balance_sheet,
-                    # "Cash Flow Statement": stock.cashflow,
-                    # # Quarterly Financials
-                    # "Quarterly Income Statement": stock.quarterly_income_stmt,
-                    # "Quarterly Balance Sheet": stock.quarterly_balance_sheet,
-                    # "Quarterly Cash Flow Statement": stock.quarterly_cashflow,
-                    # # ESG and Sustainability
-                    # "Sustainability": stock.sustainability,
-                    # # Recommendations
-                    # "Recommendations": stock.recommendations,
-                    # # Holders
-                    # "Major Holders": stock.major_holders,
-                    # "Institutional Holders": stock.institutional_holders,
-                    # # Dividends and Splits
-                    # "Dividends": stock.dividends,
-                    # "Splits": stock.splits,
-                    # # Options
-                    # "Options Expirations": stock.options
-                }
-
-
-            except Exception as e:
-                self.fundamentals[ticker] = {"Error": str(e)}
-
-        # return self.fundamentals
-
-class PortfolioAnalysis:
-    def __init__(self, transactions, ticker_data):
-        """
-        transactions: A DataFrame with columns:
-            [Operation, Date, Valuta, Type, Ticker, Quantity, Importo]
-        ticker_data: A dict of DataFrames keyed by ticker, each containing
-                     at least a 'Close' column.
-        """
-        self.transactions = transactions
-        self.ticker_data = ticker_data
-
-    def calculate_portfolio_performance(self):
-        """
-        Calculate the portfolio value (and daily performance) over time using the ticker_data and transaction history.
-
-        Returns:
-            portfolio (DataFrame): Overall portfolio performance with columns:
-                [Total Value, Cost Basis, Unrealized Gains, Realized Gains, Daily Performance (%)].
-            consolidated_ticker_perf (DataFrame): Consolidated performance of each ticker with columns:
-                [Ticker, Date, Quantity Held, Cost Basis, Realized Gains, Unrealized Gains, Market Value, Performance].
-        """
-        # --- Preprocess transactions: group by ticker for efficiency ---
-        transactions_by_ticker = {}
-        for ticker in self.transactions['Ticker'].unique():
-            txns = self.transactions[self.transactions['Ticker'] == ticker].sort_values('Date')
-            transactions_by_ticker[ticker] = txns
-
-        # --- STEP 1: Build a performance DataFrame for each ticker ---
-        performance = {}
-        for ticker, df_prices in self.ticker_data.items():
-            df_perf = df_prices.copy()
-            title = df_prices['title'].iloc[-1]
-            df_perf['Quantity Held'] = 0
-            df_perf['Cost Basis'] = 0.0
-            df_perf['Unrealized Gains'] = 0.0
-            df_perf['Realized Gains'] = 0.0
-            df_perf['Market Value'] = 0.0
-            df_perf['Performance'] = 0.0
-
-            ticker_txns = transactions_by_ticker.get(ticker, pd.DataFrame())
-            quantity_held = 0
-            total_cost = 0.0
-            realized_gains = 0.0
-            txns_idx = 0
-
-            for date in df_perf.index:
-                while txns_idx < len(ticker_txns) and ticker_txns.iloc[txns_idx]['Date'] <= date:
-                    txn = ticker_txns.iloc[txns_idx]
-                    op = txn['Operation'].lower()
-                    qty = txn['Quantity']
-                    price = df_perf.loc[date, 'Close']
-
-                    if op == 'buy':
-                        quantity_held += qty
-                        total_cost += qty * price
-                    elif op == 'sell':
-                        if quantity_held > 0:
-                            avg_cost = total_cost / quantity_held
-                            realized_gains += qty * (price - avg_cost)
-                            quantity_held -= qty
-                            total_cost -= qty * avg_cost
-                    txns_idx += 1
-
-                df_perf.loc[date, 'Quantity Held'] = quantity_held
-                df_perf.loc[date, 'Cost Basis'] = total_cost
-                df_perf.loc[date, 'Realized Gains'] = realized_gains
-                if quantity_held > 0:
-                    market_value = quantity_held * df_perf.loc[date, 'Close']
-                    df_perf.loc[date, 'Market Value'] = market_value
-                    df_perf.loc[date, 'Unrealized Gains'] = market_value - total_cost
-                    df_perf.loc[date, 'Performance'] = (market_value - total_cost) / total_cost if total_cost > 0 else 0
-
-            df_perf['Ticker'] = ticker
-            df_perf['Title'] = title
-            performance[ticker] = df_perf.reset_index().rename(columns={'index': 'Date'})
-
-        # --- STEP 2: Aggregate into a single portfolio DataFrame ---
-        all_dates = sorted(set().union(*(performance[t]['Date'] for t in performance)))
-        portfolio = pd.DataFrame(index=all_dates,
-                                 columns=['Total Value', 'Cost Basis', 'Unrealized Gains', 'Realized Gains',
-                                          'Daily Performance (%)'])
-        portfolio[['Total Value', 'Realized Gains', 'Unrealized Gains', 'Performance']] = 0.0
-
-        prev_total_value = None
-
-        for date in all_dates:
-            total_value = 0.0
-            realized_gains_sum = 0.0
-            unrealized_gains_sum = 0.0
-            cost_basis = 0.0
-
-            for ticker, perf_df in performance.items():
-                if date in perf_df['Date'].values:
-                    row = perf_df.loc[perf_df['Date'] == date].iloc[0]
-                    total_value += row['Quantity Held'] * row['Close']
-                    realized_gains_sum += row['Realized Gains']
-                    unrealized_gains_sum += row['Unrealized Gains']
-                    cost_basis += row['Cost Basis']
-
-            portfolio.loc[date, 'Total Value'] = total_value
-            portfolio.loc[date, 'Cost Basis'] = cost_basis
-            portfolio.loc[date, 'Realized Gains'] = realized_gains_sum
-            portfolio.loc[date, 'Unrealized Gains'] = unrealized_gains_sum
-
-            if prev_total_value is not None and prev_total_value != 0:
-                portfolio.loc[date, 'Daily Performance (%)'] = ((total_value - prev_total_value) / prev_total_value) * 100
-            else:
-                portfolio.loc[date, 'Daily Performance (%)'] = 0.0
-
-            prev_total_value = total_value
-
-        # Reset the index for portfolio DataFrame
-        portfolio.reset_index(inplace=True)
-        portfolio.rename(columns={'index': 'Date'}, inplace=True)
-        portfolio['Performance'] = 100*portfolio['Unrealized Gains'] / portfolio['Cost Basis']
-
-        return portfolio, performance
-
-
-
 def calculate_kpis(portfolio_df: pd.DataFrame,
                    allocation_df: pd.DataFrame,
                    all_tickers_perf: Dict[str, pd.DataFrame]) -> Dict[str, Any]:
@@ -669,11 +535,11 @@ def calculate_kpis(portfolio_df: pd.DataFrame,
     # you can also compare that here. For example:
     best_perf_df = all_tickers_perf[best_ticker_symbol]
     best_perf_col = "Performance" if "Performance" in best_perf_df.columns else "Performance (%)"
-    best_ticker_perf = 100 * best_perf_df[best_perf_col].iloc[-1]  # or best_perf_df["Performance (%)"].iloc[-1]
+    best_ticker_perf = best_perf_df[best_perf_col].iloc[-1]  # or best_perf_df["Performance (%)"].iloc[-1]
 
     worst_perf_df = all_tickers_perf[worst_ticker_symbol]
     worst_perf_col = "Performance" if "Performance" in worst_perf_df.columns else "Performance (%)"
-    worst_ticker_perf = 100 * worst_perf_df[worst_perf_col].iloc[-1]
+    worst_ticker_perf = worst_perf_df[worst_perf_col].iloc[-1]
 
     best_ticker = {
         "ticker": best_ticker_symbol,

@@ -106,7 +106,7 @@ class Ticker:
 
         return self.data
 
-    def calculate_performance(self) -> pd.DataFrame:
+    def calculate_performance(self, start_date=None, end_date=None) -> pd.DataFrame:
         """
         Calculate daily return (%), daily absolute change, and cumulative return
         based on 'Close' prices. Appends columns to self.data and returns it.
@@ -115,6 +115,29 @@ class Ticker:
             raise ValueError(f"No price data available for {self.symbol} to calculate performance.")
 
         df = self.data.copy()
+        if start_date is not None and end_date is not None:
+            df = df[(df.index.date >= start_date) & (df.index.date <= end_date)]
+        initial_close = df["Close"].iloc[0]
+        df["Daily Return (%)"] = df["Close"].pct_change() * 100
+        df["Daily Absolute Change"] = df["Close"].diff()
+        df["Performance (Abs)"] = df["Close"] - initial_close
+        df["Performance (%)"] = (df["Close"] / initial_close - 1) * 100
+        df['ticker'] = self.symbol
+        df['title'] = self.title
+
+        self.data = df
+        return self.data
+
+    def calculate_performance_by_date(self, start_date, end_date) -> pd.DataFrame:
+        """
+        Calculate daily return (%), daily absolute change, and cumulative return
+        based on 'Close' prices. Appends columns to self.data and returns it.
+        """
+        if self.data.empty or "Close" not in self.data.columns:
+            raise ValueError(f"No price data available for {self.symbol} to calculate performance.")
+
+        df = self.data.copy()
+        df = df[(df.index.date >= start_date) & (df.index.date <= end_date)]
         df["Daily Return (%)"] = df["Close"].pct_change() * 100
         df["Daily Absolute Change"] = df["Close"].diff()
         df['ticker'] = self.symbol
@@ -125,7 +148,6 @@ class Ticker:
 
     def __repr__(self):
         return f"<Ticker {self.symbol} ({self.title})>"
-
 
 
 # ----------------------------------------------
@@ -164,14 +186,25 @@ class TickerCollection:
             all_data[symbol] = df
         return all_data
 
-    def calculate_all_ticker_performances(self) -> Dict[str, pd.DataFrame]:
+    def calculate_all_ticker_performances(self, start_date=None, end_date=None) -> Dict[str, pd.DataFrame]:
         """
         Calculate performance metrics for each Ticker.
         Returns a dict keyed by symbol -> performance DataFrame.
         """
         performances = {}
         for symbol, ticker in self.tickers_map.items():
-            df_perf = ticker.calculate_performance()
+            df_perf = ticker.calculate_performance(start_date, end_date)
+            performances[symbol] = df_perf.reset_index().rename(columns={'index': 'Date'})
+        return performances
+
+    def calculate_all_ticker_performances_by_date(self, start_date, end_date) -> Dict[str, pd.DataFrame]:
+        """
+        Calculate performance metrics for each Ticker.
+        Returns a dict keyed by symbol -> performance DataFrame.
+        """
+        performances = {}
+        for symbol, ticker in self.tickers_map.items():
+            df_perf = ticker.calculate_performance_by_date(start_date, end_date)
             performances[symbol] = df_perf.reset_index().rename(columns={'index': 'Date'})
         return performances
 
@@ -226,26 +259,8 @@ class Benchmark(Ticker):
         except Exception as e:
             self.fundamentals = {"Error": str(e)}
 
-
-    def calculate_performance(self) -> pd.DataFrame:
-        """
-        Override performance calculation if needed.
-        Benchmarks don't have transactional data, so cumulative return
-        is directly derived from price changes.
-        """
-        if self.data.empty or "Close" not in self.data.columns:
-            raise ValueError(f"No price data available for {self.symbol} to calculate performance.")
-
-        # Calculate cumulative returns based on price changes
-        df = self.data.copy()
-        initial_close = df["Close"].iloc[0]
-        df["Performance (Abs)"] = df["Close"] - initial_close
-        df["Performance (%)"] = (df["Close"] / initial_close - 1) * 100
-        df['ticker'] = self.symbol
-        df['title'] = self.title
-
-        self.data = df
-        return self.data
+    def calculate_performance(self, start_date=None, end_date=None) -> pd.DataFrame:
+        return super().calculate_performance(start_date, end_date)
 
     def __repr__(self):
         return f"<Benchmark {self.symbol} ({self.title})>"
@@ -261,5 +276,8 @@ class BenchmarkCollection(TickerCollection):
         # Replace Ticker instances with Benchmark instances
         self.tickers_map = {symbol: Benchmark(symbol) for symbol in symbols}
 
-    def compute_all_ticker_performances(self):
-        return super().calculate_all_ticker_performances()
+    def compute_all_ticker_performances(self, start_date=None, end_date=None):
+        return super().calculate_all_ticker_performances(start_date, end_date)
+
+    def compute_all_ticker_performances_by_date(self, start_date, end_date):
+        return super().calculate_all_ticker_performances_by_date(start_date, end_date)

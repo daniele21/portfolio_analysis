@@ -1,13 +1,12 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-
+from datetime import date, timedelta
 
 from portfolio_analysis.scripts.data.portfolio import Portfolio, calculate_kpis
 from portfolio_analysis.scripts.data.ticker import BenchmarkCollection, TickerCollection
 from portfolio_analysis.scripts.visualization.plots import plot_performance_with_annotations, plot_performance, \
     create_pie_chart, plot_asset_allocation_by_type, plot_bar_realized_vs_unrealized
-
 
 
 @st.cache_data
@@ -57,85 +56,228 @@ def read_data(tickers, start_date, end_date, transactions):
                   title, label
                   in zip(benchmarks_labels, benchmarks_tickers)}
 
+    return my_portfolio, portfolio_df, all_tickers_perf, allocation_df, benchmarks
+
+def update_performance(my_portfolio, start_date, end_date):
+
+    portfolio_df, all_tickers_perf = my_portfolio.calculate_portfolio_performance_by_date(start_date, end_date)
+
+    # Also create an allocation DataFrame (final day or group by Ticker):
+    allocation_df = pd.DataFrame()
+    for sym, df_ in all_tickers_perf.items():
+        if not df_.empty:
+            last_row = df_.iloc[-1:].copy()
+            allocation_df = pd.concat((allocation_df, last_row), ignore_index=True)
+
+    # e.g. keep only relevant columns
+    allocation_df = allocation_df[
+        ['Ticker', 'Market Value', 'Unrealized Gains', 'Realized Gains', 'AssetType', 'Sector', 'Industry']]
+    allocation_df.fillna(0, inplace=True)
+
+    # Now create the plots:
+
+    # fig_value = plot_portfolio_value_over_time(portfolio_df)
+    # fig_value.show()
+
+    benchmarks_tickers = ["^GSPC", "NDAQ"]
+    benchmark_collection = BenchmarkCollection(benchmarks_tickers, start_date, end_date)
+
+    # Fetch price data and compute cumulative returns
+    benchmark_collection.fetch_fundamental_data()
+    benchmark_collection.fetch_price_data()
+    benchmark_cumulative_returns = benchmark_collection.compute_all_ticker_performances(start_date, end_date)
+    benchmarks_labels = [df['title'].iloc[0] for ticker, df in benchmark_cumulative_returns.items()]
+    benchmarks = {title: benchmark_cumulative_returns[label] for
+                  title, label
+                  in zip(benchmarks_labels, benchmarks_tickers)}
+
     return portfolio_df, all_tickers_perf, allocation_df, benchmarks
-    # return portfolio_kpis, allocation_df, portfolio_performance, portfolio_ticker_performance, ticker_data, ticker_info
 
 
-# Page Configuration
-st.set_page_config(
-    page_title="Portfolio Analysis Tool",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-# Initialize Session State for Uploaded File
-if "uploaded_file" not in st.session_state:
-    st.session_state["uploaded_file"] = None
-if "transactions" not in st.session_state:
-    st.session_state["transactions"] = None
-
-# Tabs Navigation
-tab1, tab2, tab3, tab4 = st.tabs(["Home", "Performance", "Allocation", "Transactions"])
-
-# Home Tab
-with tab1:
-    st.markdown("""
-        <div style="text-align: center;">
-            <h1>Portfolio Analysis Tool</h1>
-            <h3>Get detailed insights into your financial portfolio</h3>
-            <hr style="border: 1px solid blue;">
-        </div>
-    """, unsafe_allow_html=True)
-
-    st.info("Upload your transactions in CSV format to begin analyzing your portfolio.")
-    uploaded_file = st.file_uploader("Upload your CSV file with transactions", type="csv")
-
-    if uploaded_file:
-        st.session_state["uploaded_file"] = uploaded_file
-        transactions = pd.read_csv(uploaded_file, parse_dates=['Date'])
-        transactions['Date'] = pd.to_datetime(transactions['Date'], format="%d/%m/%Y")
-        st.session_state["transactions"] = transactions
-        st.success("File uploaded successfully!")
-        st.write("Preview of uploaded transactions:")
-        st.dataframe(transactions.head())
-    elif not st.session_state["uploaded_file"]:
-        st.warning("Please upload a valid CSV file to start.")
-
-# Check if Transactions Are Available
-transactions = st.session_state.get("transactions")
-if transactions is not None:
+@st.cache_resource
+def loading_portfolio_data(transactions):
+    print('> Reading Portfolio Data')
     tickers = transactions['Ticker'].unique().tolist()
     start_date = transactions['Date'].min()
     end_date = datetime.today().date()
 
-    portfolio_df, all_tickers_perf, allocation_df, benchmarks = read_data(tickers,
-                                                                          start_date,
-                                                                          end_date,
-                                                                          transactions)
-    portfolio_kpis = calculate_kpis(portfolio_df, allocation_df, all_tickers_perf)
+    ticker_collection = TickerCollection(tickers, start_date, end_date)
+    ticker_collection.fetch_fundamental_data()
+    # all_data = ticker_collection.fetch_price_data()
+    # all_perfs = ticker_collection.calculate_all_ticker_performances()
 
-# Performance Tab
-with tab2:
+    # Build Portfolio
+    my_portfolio = Portfolio(
+        name="Portfolio",
+        transactions=transactions,
+        tickers_map=ticker_collection.tickers_map
+    )
+
+    benchmarks_tickers = ["^GSPC", "^IXIC", 'URTH', '^RUT', '^DJI', '^FTSE']
+    benchmark_collection = BenchmarkCollection(benchmarks_tickers, start_date, end_date)
+
+    return my_portfolio, benchmark_collection
+
+    # Calculate portfolio-level performance
+    # Suppose after computing portfolio performance:
+
+    # portfolio_df, all_tickers_perf = my_portfolio.calculate_portfolio_performance()
+    #
+    # # Also create an allocation DataFrame (final day or group by Ticker):
+    # allocation_df = pd.DataFrame()
+    # for sym, df_ in all_tickers_perf.items():
+    #     if not df_.empty:
+    #         last_row = df_.iloc[-1:].copy()
+    #         allocation_df = pd.concat((allocation_df, last_row), ignore_index=True)
+    #
+    # # e.g. keep only relevant columns
+    # allocation_df = allocation_df[
+    #     ['Ticker', 'Market Value', 'Unrealized Gains', 'Realized Gains', 'AssetType', 'Sector', 'Industry']]
+    # allocation_df.fillna(0, inplace=True)
+    #
+    # # Now create the plots:
+    #
+    # # fig_value = plot_portfolio_value_over_time(portfolio_df)
+    # # fig_value.show()
+    #
+    # benchmarks_tickers = ["^GSPC", "^IXIC", 'URTH', '^RUT', '^DJI', '^FTSE']
+    # benchmark_collection = BenchmarkCollection(benchmarks_tickers, start_date, end_date)
+    #
+    # # Fetch price data and compute cumulative returns
+    # benchmark_collection.fetch_fundamental_data()
+    # benchmark_collection.fetch_price_data()
+    # benchmark_cumulative_returns = benchmark_collection.compute_all_ticker_performances()
+    # benchmarks_labels = [df['title'].iloc[0] for ticker, df in benchmark_cumulative_returns.items()]
+    # benchmarks = {title: benchmark_cumulative_returns[label] for
+    #               title, label
+    #               in zip(benchmarks_labels, benchmarks_tickers)}
+    #
+    # return portfolio_df, all_tickers_perf, allocation_df, benchmarks
+
+
+# @st.cache_data
+def compute_performance_by_date(portfolio, benchmark_collection, start_date, end_date):
+    data, ticker_data = portfolio.calculate_portfolio_performance_by_date(start_date, end_date)
+    # portfolio_df, all_tickers_perf = portfolio.calculate_portfolio_performance_by_date(start_date, end_date)
+
+    # Also create an allocation DataFrame (final day or group by Ticker):
+    allocation_df = pd.DataFrame()
+    for sym, df_ in ticker_data.items():
+        if not df_.empty:
+            last_row = df_.iloc[-1:].copy()
+            allocation_df = pd.concat((allocation_df, last_row), ignore_index=True)
+
+    # print(allocation_df.head())
+    # st.dataframe(allocation_df.head())
+    # return None, None, None, None
+    # e.g. keep only relevant columns
+    allocation_df = allocation_df[
+        ['Ticker', 'Market Value', 'Unrealized Gains', 'Realized Gains', 'AssetType', 'Sector', 'Industry']]
+    allocation_df.fillna(0, inplace=True)
+
+    # Now create the plots:
+
+    # fig_value = plot_portfolio_value_over_time(portfolio_df)
+    # fig_value.show()
+
+    # Fetch price data and compute cumulative returns
+    benchmark_collection.fetch_fundamental_data()
+    benchmark_collection.fetch_price_data()
+    benchmark_cumulative_returns = benchmark_collection.calculate_all_ticker_performances_by_date()
+    benchmarks_labels = [df['title'].iloc[0] for ticker, df in benchmark_cumulative_returns.items()]
+    benchmarks = {title: benchmark_cumulative_returns[label] for
+                  title, label
+                  in zip(benchmarks_labels, benchmarks_tickers)}
+
+    return data, ticker_data, allocation_df, benchmarks
+
+    # return portfolio_df
+
+
+@st.cache_data
+def read_transactions(uploaded_file):
+    print('> Reading Transaction')
+    transactions = pd.read_csv(uploaded_file, parse_dates=['Date'])
+    transactions['Date'] = pd.to_datetime(transactions['Date'], format="%d/%m/%Y")
+    return transactions
+
+# @st.dialog('Setup Data')
+# def upload_data():
+#     uploaded_file = st.file_uploader("Upload your CSV file with transactions", type="csv")
+#     if uploaded_file:
+#         st.session_state["uploaded_file"] = uploaded_file
+#         st.rerun()
+
+
+def render_home_tab():
+    st.info("Upload your transactions in CSV format to begin analyzing your portfolio.")
+    uploaded_file = st.file_uploader("Upload your CSV file with transactions", type="csv")
+    # uploaded_file = st.session_state.get("uploaded_file")
+
+    # if uploaded_file is None:
+    #     uploaded_file = upload_data()
+
+    if uploaded_file:
+        st.session_state["uploaded_file"] = uploaded_file
+        print(f' > Reloading data: {uploaded_file}')
+
+        transactions = read_transactions(uploaded_file)
+        st.session_state["transactions"] = transactions
+
+        st.success("File uploaded successfully!")
+        st.write("Preview of uploaded transactions:")
+        st.dataframe(transactions.head())
+
+    elif not st.session_state["uploaded_file"]:
+        st.warning("Please upload a valid CSV file to start.")
+
+
+
+
+def render_performance_tab():
+    transactions = st.session_state.get("transactions")
+    min_date = st.session_state.get('start_date')
+    max_date = st.session_state.get('end_date')
+    my_portfolio = st.session_state.get('portfolio')
+    today = date.today()
+
     if transactions is not None:
-        st.header("Portfolio Performance Overview")
+        # _,selection_col,_ = st.columns([1])
+        # with selection_col:
+        options = ["Portfolio", "Assets"]
+        st.subheader('Choose the target analysis')
+        selection = st.pills(label=None, options=options, selection_mode="single")
+        start_date, end_date = timeframe_input(min_date, max_date)
+        st.divider()
 
-        # Portfolio KPIs
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Total Value", f"€ {portfolio_kpis['value']:,.0f}")
-        col2.metric("Unrealized Gains", f"€ {portfolio_kpis['unrealized_gains']:.2f}")
-        col3.metric("Performance", f"{portfolio_kpis['performance']:.0f} %", help="Portfolio performance to date.")
+        if selection == options[0]:
+            st.subheader("Portfolio KPIs")
+            col1, col2, col3, col4 = st.columns([1,1,1,3])
+            #     st.divider()
+            # start_date, end_date = timeframe_input(min_date, max_date, col4)
 
-        st.markdown("---")
 
-        # Portfolio Value Over Time
-        benchmarks_tickers = [df['title'].iloc[0] for x, df in benchmarks.items()]
+            portfolio_df, all_tickers_perf, allocation_df, benchmarks = update_performance(my_portfolio,
+                                                                                           start_date,
+                                                                                           end_date)
+            portfolio_kpis = calculate_kpis(portfolio_df, allocation_df, all_tickers_perf)
 
-        st.subheader("Portfolio Value Over Time")
-        selected_benchmark_ticker = st.multiselect("Select Benchmark:", benchmarks_tickers)
-        data_dict = {ticker: benchmarks[ticker] for ticker in selected_benchmark_ticker}
-        # title = ' - '.join([value['title'].iloc[0] for _, value in data_dict.items()])
+            # Portfolio KPIs
+            col1.metric("Total Value", f"€ {portfolio_kpis['value']:,.0f}", border=True)
+            col2.metric("Gain/Loss", f"€ {portfolio_kpis['unrealized_gains']:.2f}", border=True)
+            col3.metric("Performance", f"{portfolio_kpis['performance']:.0f} %", help="Portfolio performance to date.", border=True)
 
-        annotated_line_chart = plot_performance(
+            st.markdown("---")
+
+            # Portfolio Value Over Time
+
+            benchmarks_tickers = [df['title'].iloc[0] for x, df in benchmarks.items()]
+
+            st.subheader("Portfolio Performance Over Time")
+            selected_benchmark_ticker = st.multiselect("Select Benchmark:", benchmarks_tickers)
+            data_dict = {ticker: benchmarks[ticker] for ticker in selected_benchmark_ticker}
+
+            annotated_line_chart = plot_performance(
                 portfolio_df=portfolio_df,
                 items=data_dict,
                 # transactions=transactions_df,
@@ -145,57 +287,147 @@ with tab2:
                 item_labels=selected_benchmark_ticker,
                 title="Portfolio, Tickers, and Benchmarks Performance"
             )
-        st.plotly_chart(annotated_line_chart)
+            st.plotly_chart(annotated_line_chart)
 
-        st.markdown("---")
+            st.markdown("---")
 
-        # Best and Worst Performing Tickers
-        st.subheader("Best and Worst Performing Tickers")
-        sub_col1, sub_col2 = st.columns(2)
+        elif selection == options[1]:
+            # Best and Worst Performing Tickers
+            st.subheader("Best and Worst Performing Tickers")
+            sub_col1, sub_col2, _, col4 = st.columns([1,1,1,3])
+            start_date, end_date = timeframe_input(min_date, max_date, col4)
 
-        best_ticker = portfolio_kpis["best_ticker"]
-        worst_ticker = portfolio_kpis["worst_ticker"]
+            portfolio_df, all_tickers_perf, allocation_df, benchmarks = update_performance(my_portfolio,
+                                                                                           start_date,
+                                                                                           end_date)
+            portfolio_kpis = calculate_kpis(portfolio_df, allocation_df, all_tickers_perf)
 
-        with sub_col1:
-            st.metric("Best Performing Ticker", best_ticker['ticker'])
-            st.metric("Value", f"€ {best_ticker['unrealized_gains']:.2f}")
-            st.metric("Performance", f"{best_ticker['performance']:.2f} %")
+            best_ticker = portfolio_kpis["best_ticker"]
+            worst_ticker = portfolio_kpis["worst_ticker"]
 
-        with sub_col2:
-            st.metric("Worst Performing Ticker", worst_ticker['ticker'])
-            st.metric("Value", f"€ {worst_ticker['unrealized_gains']:.2f}")
-            st.metric("Performance", f"{worst_ticker['performance']:.2f} %", delta_color="inverse")
+            with sub_col1:
+                st.metric("Best Performing Ticker", best_ticker['ticker'])
+                st.metric("Value", f"€ {best_ticker['unrealized_gains']:.2f}")
+                st.metric("Performance", f"{best_ticker['performance']:.2f} %")
 
-        st.markdown("---")
+            with sub_col2:
+                st.metric("Worst Performing Ticker", worst_ticker['ticker'])
+                st.metric("Value", f"€ {worst_ticker['unrealized_gains']:.2f}")
+                st.metric("Performance", f"{worst_ticker['performance']:.2f} %", delta_color="inverse")
 
-        # Unrealized Gains for a Selected Ticker
-        st.subheader("Unrealized Gains for Selected Ticker")
-        selected_ticker = st.multiselect("Select Ticker:", tickers)
+            st.markdown("---")
 
-        data_dict = {ticker: all_tickers_perf[ticker] for ticker in selected_ticker}
-        titles = [value['title'].iloc[0] for _, value in data_dict.items()]
+            # Unrealized Gains for a Selected Ticker
+            st.subheader("Unrealized Gains for Selected Ticker")
+            selected_ticker = st.multiselect("Select Ticker:", tickers)
 
-        if selected_ticker:
-            perf_chart = plot_performance(
-                portfolio_df=None,
-                items=data_dict,
-                color='orange',
-                # transactions=transactions,
-                date_col="Date",
-                perf_col="Performance (%)",
-                portfolio_label="Portfolio",
-                item_labels=titles,
-                title=f"Ticker Performance Over Time"
-            )
-            st.plotly_chart(perf_chart)
+            data_dict = {ticker: all_tickers_perf[ticker] for ticker in selected_ticker}
+            titles = [value['title'].iloc[0] for _, value in data_dict.items()]
+
+            if selected_ticker:
+                perf_chart = plot_performance(
+                    portfolio_df=None,
+                    items=data_dict,
+                    color='orange',
+                    # transactions=transactions,
+                    date_col="Date",
+                    perf_col="Performance (%)",
+                    portfolio_label="Portfolio",
+                    item_labels=titles,
+                    title=f"Ticker Performance Over Time"
+                )
+                st.plotly_chart(perf_chart)
 
     else:
         st.warning("Please upload a CSV file in the Home tab to analyze performance.")
 
-# Allocation Tab
-with tab3:
+
+def timeframe_input(min_date, max_date, container=None):
+    today = date.today()
+    default_start_date = min_date
+    default_end_date = max_date
+
+    container = st.columns(1)[0] if container is None else container
+
+    with container:
+        with st.form('Configure Date Range', border=False):
+            _, col1, col2, col3 = st.columns([2, 1, 1, 2], gap='medium')
+            with col1:
+                start_date = st.date_input(
+                    "Start Date",
+                    value=default_start_date,
+                    min_value=min_date,
+                    max_value=today,  # Latest selectable date
+                )
+            with col2:
+                end_date = st.date_input(
+                    "End Date",
+                    value=default_end_date,
+                    min_value=min_date,  # End date cannot be earlier than start date
+                    max_value=today,
+                )
+            with col3:
+                st.text('')
+                submitted = st.form_submit_button("Submit")
+                if submitted:
+                    return start_date, end_date
+                else:
+                    # return  pd.Timestamp(min_date),  pd.Timestamp(max_date)
+                    return pd.to_datetime(min_date).date(), pd.to_datetime(max_date).date()
+
+
+
+if __name__ == '__main__':
+
+    st.set_page_config(
+        page_title="Portfolio Analysis Tool",
+        layout="wide",
+        initial_sidebar_state="auto"
+    )
+
+    # Initialize Session State for Uploaded File
+    if "uploaded_file" not in st.session_state:
+        st.session_state["uploaded_file"] = None
+    if "transactions" not in st.session_state:
+        st.session_state["transactions"] = None
+
+    st.markdown("""
+            <div style="text-align: center;">
+                <h1>Portfolio Analysis Tool</h1>
+                <h3>Get detailed insights into your financial portfolio</h3>
+                <hr style="border: 1px solid blue;">
+            </div>
+        """, unsafe_allow_html=True)
+
+    home_tab, perf_tab, allocation_tab, transaction_tab = st.tabs(["Home", "Performance", "Allocation", "Transactions"])
+
+    with home_tab:
+        render_home_tab()
+
+    transactions = st.session_state.get("transactions")
+    if transactions is not None:
+        tickers = transactions['Ticker'].unique().tolist()
+        start_date = transactions['Date'].min()
+        end_date = datetime.today().date()
+        st.session_state["start_date"] = start_date
+        st.session_state["end_date"] = end_date
+
+        my_portfolio, portfolio_df, all_tickers_perf, allocation_df, benchmarks = read_data(tickers,
+                                                                              start_date,
+                                                                              end_date,
+                                                                              transactions)
+        portfolio_kpis = calculate_kpis(portfolio_df, allocation_df, all_tickers_perf)
+        st.session_state['portfolio'] = my_portfolio
+        # my_portfolio, benchmark_collection = loading_portfolio_data(transactions)
+        # st.session_state["benchmarks"] = benchmark_collection
+        # st.session_state["portfolio"] = my_portfolio
+
+
+    with perf_tab:
+        render_performance_tab()
+
     # Allocation Tab
-    with tab3:
+    with allocation_tab:
         if transactions is not None:
             st.header("Portfolio Allocation")
 
@@ -220,18 +452,18 @@ with tab3:
         else:
             st.warning("Please upload a CSV file in the Home tab to view asset allocation.")
 
-# Transactions Tab
-with tab4:
-    st.header("Uploaded Transactions")
-    if transactions is not None:
-        st.dataframe(transactions, use_container_width=True)
-    else:
-        st.warning("No transactions uploaded. Please upload a CSV file in the Home tab.")
+    # Transactions Tab
+    with transaction_tab:
+        st.header("Uploaded Transactions")
+        if transactions is not None:
+            st.dataframe(transactions, use_container_width=True)
+        else:
+            st.warning("No transactions uploaded. Please upload a CSV file in the Home tab.")
 
-# Footer
-st.markdown("""
-    <footer style="text-align: center; margin-top: 20px; font-size: small; color: #666;">
-        <hr>
-        <p>© 2025 Portfolio Analysis | All Rights Reserved</p>
-    </footer>
-""", unsafe_allow_html=True)
+    # Footer
+    st.markdown("""
+        <footer style="text-align: center; margin-top: 20px; font-size: small; color: #666;">
+            <hr>
+            <p>© 2025 Portfolio Analysis | All Rights Reserved</p>
+        </footer>
+    """, unsafe_allow_html=True)

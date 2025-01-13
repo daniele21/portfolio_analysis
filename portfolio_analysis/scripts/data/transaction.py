@@ -13,9 +13,11 @@ class Transaction:
                  quantity: float):
         self.operation = operation.lower()  # e.g. "buy" or "sell"
         self.date = date_
-        self.valuta = valuta
+        # self.valuta = valuta
         self.ticker_symbol = ticker_symbol.upper()
         self.quantity = quantity
+
+
 
     def __repr__(self):
         return (f"<Transaction {self.operation.upper()} {self.quantity} of "
