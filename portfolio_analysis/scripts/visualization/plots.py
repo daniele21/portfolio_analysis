@@ -374,10 +374,30 @@ def create_pie_chart(allocation_df):
     Plot the current portfolio allocation (by Ticker).
     Assumes allocation_df has columns ['Ticker', 'Market Value'].
     """
-    fig = px.pie(allocation_df, names='Ticker', values='Market Value', title='Current Portfolio Allocation')
-    fig.update_traces(textposition='inside', textinfo='percent+label')
-    fig.update_layout(template='plotly_white')
+    fig = px.pie(allocation_df, names='Ticker', values='Market Value')
+    fig.update_traces(textposition='inside',
+                      textinfo='percent+label',
+                      insidetextfont=dict(size=14, color='white'),  # Increase font size and ensure good contrast
+                      outsidetextfont=dict(size=12, color='black')
+                      )
+    fig.update_layout(
+        template='plotly_white',
+        autosize=True,  # Automatically size the chart
+        margin=dict(l=20, r=20, t=30, b=20),  # Adjust margins for better fit
+        width=None,  # Let width adjust dynamically
+        height=None,  # Let height adjust dynamically
+        legend=dict(
+            font=dict(size=14),  # Make legend text larger
+            title=dict(font=dict(size=16)),  # Make legend title larger
+            orientation="h",  # Horizontal legend for better layout (optional)
+            yanchor="top",  # Position legend at the top
+            y=1.1,  # Adjust vertical position
+            xanchor="center",  # Center legend horizontally
+            x=0.5,  # Adjust horizontal position
+        )
+    )
     return fig
+
 
 
 def create_bar_chart(allocation_df, value_col='Unrealized Gains', title='Value by Ticker'):
@@ -891,7 +911,26 @@ def plot_asset_allocation_by_type(allocation_df, type_col='AssetType'):
     """
     # Summarize by asset type
     df_type = allocation_df.groupby(type_col)['Market Value'].sum().reset_index()
-    fig = px.pie(df_type, names=type_col, values='Market Value', title=f"Allocation by {type_col}")
-    fig.update_traces(textposition='inside', textinfo='percent+label')
-    fig.update_layout(template='plotly_white')
+    fig = px.pie(df_type, names=type_col, values='Market Value')
+    fig.update_traces(textposition='inside',
+                      textinfo='percent+label',
+                      insidetextfont=dict(size=14, color='white'),  # Increase font size and ensure good contrast
+                      outsidetextfont=dict(size=12, color='black')
+                      )
+    fig.update_layout(
+        template='plotly_white',
+        autosize=True,  # Automatically size the chart
+        margin=dict(l=20, r=20, t=30, b=20),  # Adjust margins for better fit
+        width=None,  # Let width adjust dynamically
+        height=None,  # Let height adjust dynamically
+        legend=dict(
+            font=dict(size=14),  # Make legend text larger
+            title=dict(font=dict(size=16)),  # Make legend title larger
+            orientation="h",  # Horizontal legend for better layout (optional)
+            yanchor="top",  # Position legend at the top
+            y=1.1,  # Adjust vertical position
+            xanchor="center",  # Center legend horizontally
+            x=0.5,  # Adjust horizontal position
+        )
+    )
     return fig

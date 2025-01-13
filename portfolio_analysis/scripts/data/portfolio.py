@@ -41,7 +41,10 @@ class Portfolio:
         self.portfolio_df: pd.DataFrame = pd.DataFrame()
         self.all_tickers_perf: Dict[str, pd.DataFrame] = {}
 
-    def calculate_portfolio_performance_by_date(self, start_date: date, end_date: date):
+    def calculate_portfolio_performance_by_date(self,
+                                                start_date: date,
+                                                end_date: date,
+                                                ):
         """
         Calculate the portfolio value over time within a specified date range,
         taking into account all transactions and the Ticker close prices.
@@ -327,7 +330,7 @@ class Portfolio:
     # -------------------------------------
     # 4A) HELPER METHODS FOR KPI COMPUTATION
     # -------------------------------------
-    def compute_daily_returns(self) -> pd.Series:
+    def compute_daily_returns(self):
         """
         Return the daily returns as a Series in decimal form, e.g. 0.01 for 1%.
         Computed from 'Daily Performance (%)' in the self.portfolio_df.
@@ -336,39 +339,62 @@ class Portfolio:
             raise ValueError("Portfolio data is empty. Run calculate_portfolio_performance() first.")
 
         # Convert daily performance % to decimal
-        daily_returns = self.portfolio_df["Daily Performance (%)"] / 100.0
-        return daily_returns
+        df = self.portfolio_df.set_index('Date').ffill()
+        initial_value = df["Total Value"].shift(1).dropna().iloc[1:]
+        latest_value = df.loc[initial_value.index, "Total Value"]
 
-    def compute_abs_return(self) -> float:
+        daily_returns_abs = latest_value - initial_value
+        daily_returns = 100*(latest_value - initial_value) / initial_value
+
+        return daily_returns_abs, daily_returns
+
+    def compute_period_returns(self, frequency="W"):
         """
-        Compute absolute return from the first day to the last.
+        Compute portfolio returns over a given frequency (e.g., weekly or monthly).
+        :param frequency: Resampling frequency (e.g., 'W' for weekly, 'M' for monthly).
+        Returns:
+            A DataFrame with returns computed for each period.
         """
         if self.portfolio_df.empty:
             raise ValueError("Portfolio data is empty. Run calculate_portfolio_performance() first.")
 
-        initial_value = self.portfolio_df["Total Value"].iloc[0]
-        latest_value = self.portfolio_df["Total Value"].iloc[-1]
-        if initial_value == 0:
-            return 0.0
-        abs_return = (latest_value - initial_value) / initial_value * 100
-        return abs_return
+        # Ensure the Date column is datetime and set as index
+        df = self.portfolio_df.copy()
+        df['Date'] = pd.to_datetime(df['Date'])
+        df.set_index('Date', inplace=True)
+        df.sort_index(inplace=True)
+        # Forward-fill missing values to ensure continuity
+        df['Total Value'] = df['Total Value'].ffill(axis=0)
+
+        # Resample to the specified frequency
+        resampled = df['Total Value'].resample(frequency).last()
+        resampled.dropna(inplace=True)
+
+        initial_value = resampled.shift(1).dropna().iloc[1:]
+        latest_value = resampled[initial_value.index]
+
+        # Compute returns: (end_value - start_value) / start_value
+        returns_abs = latest_value - initial_value
+        returns = 100 * (latest_value - initial_value) / initial_value
+
+        return returns_abs, returns
 
     def compute_volatility(self, annualize: bool = True) -> float:
         """
         Calculate the standard deviation of daily returns. Annualize if desired.
         """
-        daily_returns = self.compute_daily_returns()
-        vol = daily_returns.std()
+        _, daily_returns_pct = self.compute_daily_returns()
+        daily_vol = daily_returns_pct.std()
         if annualize:
             # ~252 trading days in a year
-            vol *= (252 ** 0.5)
-        return vol
+            annualized_vol = daily_vol * (252 ** 0.5)
+        return daily_vol, annualized_vol
 
     def compute_sharpe_ratio(self, risk_free_rate_annual: float = 0.01) -> float:
         """
         Compute the Sharpe Ratio based on daily returns and a given annual risk-free rate.
         """
-        daily_returns = self.compute_daily_returns()
+        daily_returns_abs, daily_returns = self.compute_daily_returns()
         # Convert the annual risk-free rate to a daily figure
         daily_rf = risk_free_rate_annual / 252.0
         excess_returns = daily_returns - daily_rf
@@ -502,7 +528,8 @@ class Portfolio:
         return f"<Portfolio name={self.name}, Transactions={len(self.transactions)}>"
 
 
-def calculate_kpis(portfolio_df: pd.DataFrame,
+def calculate_kpis(portfolio,
+                   portfolio_df: pd.DataFrame,
                    allocation_df: pd.DataFrame,
                    all_tickers_perf: Dict[str, pd.DataFrame]) -> Dict[str, Any]:
     """
@@ -516,6 +543,12 @@ def calculate_kpis(portfolio_df: pd.DataFrame,
     performance_pct = portfolio_df["Performance (%)"].iloc[-1]
     unrealized_gains = allocation_df["Unrealized Gains"].sum()
     realized_gains = allocation_df["Realized Gains"].sum()
+
+    daily_returns_abs, daily_returns = portfolio.compute_daily_returns()
+    weekly_returns_abs, weekly_returns = portfolio.compute_period_returns('W')
+    monthly_returns_abs, monthly_returns = portfolio.compute_period_returns('M')
+
+    daily_vol, annualized_vol = portfolio.compute_volatility()
 
     # Daily change in portfolio value
     if len(portfolio_df) > 1:
@@ -554,6 +587,15 @@ def calculate_kpis(portfolio_df: pd.DataFrame,
 
     return {
         "value": total_value,
+        "volatility": {'daily': daily_vol,
+                       'annualized': annualized_vol},
+        'returns': {'daily':{'abs': daily_returns_abs[-2],
+                             'pct': daily_returns[-2]},
+                    'weekly': {'abs': weekly_returns_abs[-2],
+                              'pct': weekly_returns[-2]},
+                    'monthly': {'abs': monthly_returns_abs[-1],
+                              'pct': monthly_returns[-1]},
+                    },
         "unrealized_gains": unrealized_gains,
         "realized_gains": realized_gains,
         "performance": performance_pct,

@@ -58,8 +58,8 @@ def read_data(tickers, start_date, end_date, transactions):
 
     return my_portfolio, portfolio_df, all_tickers_perf, allocation_df, benchmarks
 
-def update_performance(my_portfolio, start_date, end_date):
 
+def update_performance(my_portfolio, start_date, end_date):
     portfolio_df, all_tickers_perf = my_portfolio.calculate_portfolio_performance_by_date(start_date, end_date)
 
     # Also create an allocation DataFrame (final day or group by Ticker):
@@ -201,39 +201,175 @@ def read_transactions(uploaded_file):
     transactions['Date'] = pd.to_datetime(transactions['Date'], format="%d/%m/%Y")
     return transactions
 
-# @st.dialog('Setup Data')
-# def upload_data():
-#     uploaded_file = st.file_uploader("Upload your CSV file with transactions", type="csv")
-#     if uploaded_file:
-#         st.session_state["uploaded_file"] = uploaded_file
-#         st.rerun()
+
+def _home_allocation(allocation_df):
+    pills = st.pills(label=None, options=['Asset', 'Type'], default='Asset')
+
+    if pills == 'Asset':
+        # st.subheader("Allocation by Asset")
+        pie_chart = create_pie_chart(allocation_df)
+        st.plotly_chart(pie_chart, use_container_width=True)
+    elif pills == 'Type':
+        # st.subheader("Allocation by Asset")
+        pie_chart = plot_asset_allocation_by_type(allocation_df)
+        st.plotly_chart(pie_chart, use_container_width=True)
 
 
-def render_home_tab():
-    st.info("Upload your transactions in CSV format to begin analyzing your portfolio.")
-    uploaded_file = st.file_uploader("Upload your CSV file with transactions", type="csv")
-    # uploaded_file = st.session_state.get("uploaded_file")
+def _kpis(portfolio_kpis):
+    cols = st.columns([1,1,1])
+    with cols[0]:
+        st.subheader(f"Total Value")
+        st.header(f"€ {portfolio_kpis['value']:,.0f}")
+    with cols[1]:
+        st.subheader(f"Gain/Loss")
+        st.header(f"€ {portfolio_kpis['unrealized_gains']:.2f}")
+    with cols[2]:
+        st.subheader(f"Performance")
+        st.header(f"€ {portfolio_kpis['performance']:.2f}")
 
-    # if uploaded_file is None:
-    #     uploaded_file = upload_data()
+    st.divider()
 
-    if uploaded_file:
-        st.session_state["uploaded_file"] = uploaded_file
-        print(f' > Reloading data: {uploaded_file}')
-
-        transactions = read_transactions(uploaded_file)
-        st.session_state["transactions"] = transactions
-
-        st.success("File uploaded successfully!")
-        st.write("Preview of uploaded transactions:")
-        st.dataframe(transactions.head())
-
-    elif not st.session_state["uploaded_file"]:
-        st.warning("Please upload a valid CSV file to start.")
-
-
+    with st.expander('Returns'):
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Daily Returns",
+                    f"€ {portfolio_kpis['returns']['daily']['abs']:.2f}",
+                    delta=f"{portfolio_kpis['returns']['daily']['pct']:.2f} %",
+                    border=False)
+        col2.metric("Weekly Returns",
+                    f"€ {portfolio_kpis['returns']['weekly']['abs']:.2f}",
+                    delta=f"{portfolio_kpis['returns']['weekly']['pct']:.2f} %",
+                    border=False)
+        col3.metric("Monthly Returns",
+                    f"€ {portfolio_kpis['returns']['monthly']['abs']:.2f}",
+                    delta=f"{portfolio_kpis['returns']['monthly']['pct']:.2f} %",
+                    border=False)
 
 
+
+def _general_performance(portfolio_df):
+    annotated_line_chart = plot_performance(
+        portfolio_df=portfolio_df,
+        items=None,
+        # transactions=transactions_df,
+        date_col="Date",
+        perf_col="Performance (%)",  # or "Cumulative Return (%)"
+        portfolio_label="My Portfolio",
+        item_labels=None,
+        #title="Portfolio, Tickers, and Benchmarks Performance"
+    )
+    st.plotly_chart(annotated_line_chart)
+
+
+def render_home_tab(allocation_df, portfolio_kpis, portfolio_df):
+    transactions = st.session_state.get("transactions")
+    if transactions is not None:
+        col1, _, col2 = st.columns([2,0.5,2])
+        with col1:
+            st.header("Portfolio KPIs")
+            _kpis(portfolio_kpis)
+            _general_performance(portfolio_df)
+        with col2:
+            st.header("Asset Allocation")
+            _home_allocation(allocation_df)
+
+        # # Unrealized vs Realized Gains (Bar Chart)
+        # st.subheader("Realized vs. Unrealized Gains")
+        # gains_bar_chart = plot_bar_realized_vs_unrealized(allocation_df)
+        # st.plotly_chart(gains_bar_chart, use_container_width=True)
+
+    else:
+        st.warning("Please upload a CSV file in the Home tab to view asset allocation.")
+
+
+def _portfolio_performance(my_portfolio, start_date, end_date):
+    portfolio_df, all_tickers_perf, allocation_df, benchmarks = update_performance(my_portfolio,
+                                                                                   start_date,
+                                                                                   end_date)
+    portfolio_kpis = calculate_kpis(my_portfolio, portfolio_df, allocation_df, all_tickers_perf)
+    benchmarks_tickers = [df['title'].iloc[0] for x, df in benchmarks.items()]
+
+    st.subheader("Portfolio Performance Over Time")
+    cols = st.columns([1, 2])
+    with cols[0]:
+        col, _ = st.columns([2, 1])
+        with col:
+            selected_benchmark_ticker = st.multiselect("Select Benchmark:", benchmarks_tickers)
+            data_dict = {ticker: benchmarks[ticker] for ticker in selected_benchmark_ticker}
+
+    with cols[1]:
+        # st.text("Portfolio KPIs")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Total Value", f"€ {portfolio_kpis['value']:,.0f}", border=True)
+        col2.metric("Gain/Loss", f"€ {portfolio_kpis['unrealized_gains']:.2f}", border=True)
+        col3.metric("Performance", f"{portfolio_kpis['performance']:.0f} %", help="Portfolio performance to date.",
+                    border=True)
+
+    st.markdown("---")
+
+    annotated_line_chart = plot_performance(
+        portfolio_df=portfolio_df,
+        items=data_dict,
+        # transactions=transactions_df,
+        date_col="Date",
+        perf_col="Performance (%)",  # or "Cumulative Return (%)"
+        portfolio_label="My Portfolio",
+        item_labels=selected_benchmark_ticker,
+        title="Portfolio, Tickers, and Benchmarks Performance"
+    )
+    st.plotly_chart(annotated_line_chart)
+
+    st.markdown("---")
+
+def _asset_performance(my_portfolio, start_date, end_date):
+    portfolio_df, all_tickers_perf, allocation_df, benchmarks = update_performance(my_portfolio,
+                                                                                   start_date,
+                                                                                   end_date)
+    portfolio_kpis = calculate_kpis(my_portfolio, portfolio_df, allocation_df, all_tickers_perf)
+    best_ticker = portfolio_kpis["best_ticker"]
+    worst_ticker = portfolio_kpis["worst_ticker"]
+
+    st.subheader("Asset Performance Over Time")
+    cols = st.columns([1, 2, 1])
+
+    with cols[0]:
+        selected_ticker = st.multiselect("Select Ticker:", tickers, default=tickers[0])
+        data_dict = {ticker: all_tickers_perf[ticker] for ticker in selected_ticker}
+        titles = [value['title'].iloc[0] for _, value in data_dict.items()]
+
+    with cols[1]:
+
+
+
+    with cols[2]:
+        # st.text("Portfolio KPIs")
+        col1, col2, col3, _ = st.columns([1, 1, 1, 2])
+        with col1:
+            st.metric("Best Performing Ticker", best_ticker['ticker'])
+            st.metric("Worst Performing Ticker", worst_ticker['ticker'])
+
+        with col2:
+            st.metric("Value", f"€ {best_ticker['unrealized_gains']:.2f}")
+            st.metric("Value", f"€ {worst_ticker['unrealized_gains']:.2f}")
+
+        with col3:
+            st.metric("Performance", f"{best_ticker['performance']:.2f} %")
+            st.metric("Performance", f"{worst_ticker['performance']:.2f} %")
+
+    st.markdown("---")
+
+    if selected_ticker:
+        perf_chart = plot_performance(
+            portfolio_df=None,
+            items=data_dict,
+            color='orange',
+            # transactions=transactions,
+            date_col="Date",
+            perf_col="Performance (%)",
+            portfolio_label="Portfolio",
+            item_labels=titles,
+            title=f"Ticker Performance Over Time"
+        )
+        st.plotly_chart(perf_chart)
 def render_performance_tab():
     transactions = st.session_state.get("transactions")
     min_date = st.session_state.get('start_date')
@@ -246,97 +382,16 @@ def render_performance_tab():
         # with selection_col:
         options = ["Portfolio", "Assets"]
         st.subheader('Choose the target analysis')
-        selection = st.pills(label=None, options=options, selection_mode="single")
+        selection = st.pills(label=None, options=options, selection_mode="single", default=options[0])
         start_date, end_date = timeframe_input(min_date, max_date)
         st.divider()
 
         if selection == options[0]:
-            st.subheader("Portfolio KPIs")
-            col1, col2, col3, col4 = st.columns([1,1,1,3])
-            #     st.divider()
-            # start_date, end_date = timeframe_input(min_date, max_date, col4)
-
-
-            portfolio_df, all_tickers_perf, allocation_df, benchmarks = update_performance(my_portfolio,
-                                                                                           start_date,
-                                                                                           end_date)
-            portfolio_kpis = calculate_kpis(portfolio_df, allocation_df, all_tickers_perf)
-
-            # Portfolio KPIs
-            col1.metric("Total Value", f"€ {portfolio_kpis['value']:,.0f}", border=True)
-            col2.metric("Gain/Loss", f"€ {portfolio_kpis['unrealized_gains']:.2f}", border=True)
-            col3.metric("Performance", f"{portfolio_kpis['performance']:.0f} %", help="Portfolio performance to date.", border=True)
-
-            st.markdown("---")
-
-            # Portfolio Value Over Time
-
-            benchmarks_tickers = [df['title'].iloc[0] for x, df in benchmarks.items()]
-
-            st.subheader("Portfolio Performance Over Time")
-            selected_benchmark_ticker = st.multiselect("Select Benchmark:", benchmarks_tickers)
-            data_dict = {ticker: benchmarks[ticker] for ticker in selected_benchmark_ticker}
-
-            annotated_line_chart = plot_performance(
-                portfolio_df=portfolio_df,
-                items=data_dict,
-                # transactions=transactions_df,
-                date_col="Date",
-                perf_col="Performance (%)",  # or "Cumulative Return (%)"
-                portfolio_label="My Portfolio",
-                item_labels=selected_benchmark_ticker,
-                title="Portfolio, Tickers, and Benchmarks Performance"
-            )
-            st.plotly_chart(annotated_line_chart)
-
-            st.markdown("---")
+            _portfolio_performance(my_portfolio, start_date, end_date)
 
         elif selection == options[1]:
-            # Best and Worst Performing Tickers
-            st.subheader("Best and Worst Performing Tickers")
-            sub_col1, sub_col2, _, col4 = st.columns([1,1,1,3])
-            start_date, end_date = timeframe_input(min_date, max_date, col4)
+            _asset_performance(my_portfolio, start_date, end_date)
 
-            portfolio_df, all_tickers_perf, allocation_df, benchmarks = update_performance(my_portfolio,
-                                                                                           start_date,
-                                                                                           end_date)
-            portfolio_kpis = calculate_kpis(portfolio_df, allocation_df, all_tickers_perf)
-
-            best_ticker = portfolio_kpis["best_ticker"]
-            worst_ticker = portfolio_kpis["worst_ticker"]
-
-            with sub_col1:
-                st.metric("Best Performing Ticker", best_ticker['ticker'])
-                st.metric("Value", f"€ {best_ticker['unrealized_gains']:.2f}")
-                st.metric("Performance", f"{best_ticker['performance']:.2f} %")
-
-            with sub_col2:
-                st.metric("Worst Performing Ticker", worst_ticker['ticker'])
-                st.metric("Value", f"€ {worst_ticker['unrealized_gains']:.2f}")
-                st.metric("Performance", f"{worst_ticker['performance']:.2f} %", delta_color="inverse")
-
-            st.markdown("---")
-
-            # Unrealized Gains for a Selected Ticker
-            st.subheader("Unrealized Gains for Selected Ticker")
-            selected_ticker = st.multiselect("Select Ticker:", tickers)
-
-            data_dict = {ticker: all_tickers_perf[ticker] for ticker in selected_ticker}
-            titles = [value['title'].iloc[0] for _, value in data_dict.items()]
-
-            if selected_ticker:
-                perf_chart = plot_performance(
-                    portfolio_df=None,
-                    items=data_dict,
-                    color='orange',
-                    # transactions=transactions,
-                    date_col="Date",
-                    perf_col="Performance (%)",
-                    portfolio_label="Portfolio",
-                    item_labels=titles,
-                    title=f"Ticker Performance Over Time"
-                )
-                st.plotly_chart(perf_chart)
 
     else:
         st.warning("Please upload a CSV file in the Home tab to analyze performance.")
@@ -351,7 +406,7 @@ def timeframe_input(min_date, max_date, container=None):
 
     with container:
         with st.form('Configure Date Range', border=False):
-            _, col1, col2, col3 = st.columns([2, 1, 1, 2], gap='medium')
+            col1, col2, col3, _ = st.columns([1, 1, 2, 3], gap='medium')
             with col1:
                 start_date = st.date_input(
                     "Start Date",
@@ -376,6 +431,15 @@ def timeframe_input(min_date, max_date, container=None):
                     return pd.to_datetime(min_date).date(), pd.to_datetime(max_date).date()
 
 
+@st.dialog('Setup Data')
+def upload_data():
+    uploaded_file = st.file_uploader("Upload your CSV file with transactions", type="csv")
+    if uploaded_file:
+        st.session_state["uploaded_file"] = uploaded_file
+        transactions = read_transactions(uploaded_file)
+        st.session_state["transactions"] = transactions
+        st.rerun()
+
 
 if __name__ == '__main__':
 
@@ -385,12 +449,6 @@ if __name__ == '__main__':
         initial_sidebar_state="auto"
     )
 
-    # Initialize Session State for Uploaded File
-    if "uploaded_file" not in st.session_state:
-        st.session_state["uploaded_file"] = None
-    if "transactions" not in st.session_state:
-        st.session_state["transactions"] = None
-
     st.markdown("""
             <div style="text-align: center;">
                 <h1>Portfolio Analysis Tool</h1>
@@ -399,13 +457,20 @@ if __name__ == '__main__':
             </div>
         """, unsafe_allow_html=True)
 
+    uploaded_file = None
+    transactions = None
+    allocation_df, portfolio_kpis, portfolio_df, my_portfolio = None, None, None, None
+
+    if "uploaded_file" not in st.session_state:
+        upload_data()
+    else:
+        uploaded_file = st.session_state["uploaded_file"]
+        transactions = st.session_state.get("transactions")
+
     home_tab, perf_tab, allocation_tab, transaction_tab = st.tabs(["Home", "Performance", "Allocation", "Transactions"])
 
-    with home_tab:
-        render_home_tab()
-
-    transactions = st.session_state.get("transactions")
-    if transactions is not None:
+    if transactions is not None and uploaded_file is not None:
+        # st.info('Loading Data...')
         tickers = transactions['Ticker'].unique().tolist()
         start_date = transactions['Date'].min()
         end_date = datetime.today().date()
@@ -413,50 +478,34 @@ if __name__ == '__main__':
         st.session_state["end_date"] = end_date
 
         my_portfolio, portfolio_df, all_tickers_perf, allocation_df, benchmarks = read_data(tickers,
-                                                                              start_date,
-                                                                              end_date,
-                                                                              transactions)
-        portfolio_kpis = calculate_kpis(portfolio_df, allocation_df, all_tickers_perf)
+                                                                                            start_date,
+                                                                                            end_date,
+                                                                                            transactions)
+        portfolio_kpis = calculate_kpis(my_portfolio, portfolio_df, allocation_df, all_tickers_perf)
         st.session_state['portfolio'] = my_portfolio
-        # my_portfolio, benchmark_collection = loading_portfolio_data(transactions)
-        # st.session_state["benchmarks"] = benchmark_collection
-        # st.session_state["portfolio"] = my_portfolio
 
+    with home_tab:
+        if my_portfolio is not None and \
+                allocation_df is not None and \
+                portfolio_kpis is not None and \
+                portfolio_df is not None:
+            render_home_tab(allocation_df, portfolio_kpis, portfolio_df)
+        else:
+            st.warning("No transactions uploaded. Please upload a CSV file")
 
     with perf_tab:
         render_performance_tab()
 
     # Allocation Tab
     with allocation_tab:
-        if transactions is not None:
-            st.header("Portfolio Allocation")
-
-            pie_col1, pie_col2 = st.columns(2)
-            with pie_col1:
-                # Allocation by Ticker (Pie Chart)
-                st.subheader("Allocation by Ticker")
-                pie_chart = create_pie_chart(allocation_df)
-                st.plotly_chart(pie_chart, use_container_width=True)
-
-            with pie_col2:
-                # Allocation by Asset Type (Pie Chart)
-                st.subheader("Allocation by Asset Type")
-                asset_type_chart = plot_asset_allocation_by_type(allocation_df)
-                st.plotly_chart(asset_type_chart, use_container_width=True)
-
-            # Unrealized vs Realized Gains (Bar Chart)
-            st.subheader("Realized vs. Unrealized Gains")
-            gains_bar_chart = plot_bar_realized_vs_unrealized(allocation_df)
-            st.plotly_chart(gains_bar_chart, use_container_width=True)
-
-        else:
-            st.warning("Please upload a CSV file in the Home tab to view asset allocation.")
+        pass
 
     # Transactions Tab
     with transaction_tab:
         st.header("Uploaded Transactions")
         if transactions is not None:
             st.dataframe(transactions, use_container_width=True)
+            st.data_editor(transactions)
         else:
             st.warning("No transactions uploaded. Please upload a CSV file in the Home tab.")
 

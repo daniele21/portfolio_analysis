@@ -18,6 +18,7 @@ class Ticker:
         self.asset_type: Optional[str] = None  # e.g. "EQUITY", "ETF", "MUTUALFUND"
         self.sector: Optional[str] = None  # from fundamentals
         self.industry: Optional[str] = None  # from fundamentals
+        self.category: Optional[str] = None  # from fundamentals
 
     def fetch_fundamental_data(self):
         """
@@ -29,6 +30,7 @@ class Ticker:
 
             self.fundamentals = {
                 "Quote Type": info.get("quoteType"),
+                "Category": info.get('category'),
                 "Sector": info.get("sector"),
                 "Industry": info.get("industry"),
                 "Full Name": info.get("longName"),
@@ -37,7 +39,8 @@ class Ticker:
             # Update self.title if we have a longName
             if self.fundamentals.get("Full Name"):
                 self.title = self.fundamentals["Full Name"]
-
+            if self.fundamentals.get("Category"):
+                self.category = self.fundamentals["Category"]
             if self.fundamentals.get("Quote Type"):
                 self.asset_type = self.fundamentals["Quote Type"]  # e.g., 'EQUITY'
             if self.fundamentals.get("Sector"):
