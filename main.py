@@ -2,11 +2,17 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 from datetime import date, timedelta
+import plotly.express as px
 
+from pypfopt.efficient_frontier import EfficientFrontier
+
+from portfolio_analysis.scripts.data.optimization import STRATEGIES, optimize_and_plot, optimize, TARGET_RETURN, \
+    SAME_RISK
 from portfolio_analysis.scripts.data.portfolio import Portfolio, calculate_kpis
 from portfolio_analysis.scripts.data.ticker import BenchmarkCollection, TickerCollection
+from portfolio_analysis.scripts.utils.utils import colorize
 from portfolio_analysis.scripts.visualization.plots import plot_performance_with_annotations, plot_performance, \
-    create_pie_chart, plot_asset_allocation_by_type, plot_bar_realized_vs_unrealized
+    create_pie_chart, plot_asset_allocation_by_type, plot_bar_realized_vs_unrealized, plot_optimization
 
 
 @st.cache_data
@@ -28,16 +34,7 @@ def read_data(tickers, start_date, end_date, transactions):
     portfolio_df, all_tickers_perf = my_portfolio.calculate_portfolio_performance()
 
     # Also create an allocation DataFrame (final day or group by Ticker):
-    allocation_df = pd.DataFrame()
-    for sym, df_ in all_tickers_perf.items():
-        if not df_.empty:
-            last_row = df_.iloc[-1:].copy()
-            allocation_df = pd.concat((allocation_df, last_row), ignore_index=True)
-
-    # e.g. keep only relevant columns
-    allocation_df = allocation_df[
-        ['Ticker', 'Market Value', 'Unrealized Gains', 'Realized Gains', 'AssetType', 'Sector', 'Industry']]
-    allocation_df.fillna(0, inplace=True)
+    allocation_df = my_portfolio.compute_asset_allocation()
 
     # Now create the plots:
 
@@ -59,20 +56,11 @@ def read_data(tickers, start_date, end_date, transactions):
     return my_portfolio, portfolio_df, all_tickers_perf, allocation_df, benchmarks
 
 
-def update_performance(my_portfolio, start_date, end_date):
-    portfolio_df, all_tickers_perf = my_portfolio.calculate_portfolio_performance_by_date(start_date, end_date)
+def update_performance(_my_portfolio, start_date, end_date):
+    portfolio_df, all_tickers_perf = _my_portfolio.calculate_portfolio_performance_by_date(start_date, end_date)
 
     # Also create an allocation DataFrame (final day or group by Ticker):
-    allocation_df = pd.DataFrame()
-    for sym, df_ in all_tickers_perf.items():
-        if not df_.empty:
-            last_row = df_.iloc[-1:].copy()
-            allocation_df = pd.concat((allocation_df, last_row), ignore_index=True)
-
-    # e.g. keep only relevant columns
-    allocation_df = allocation_df[
-        ['Ticker', 'Market Value', 'Unrealized Gains', 'Realized Gains', 'AssetType', 'Sector', 'Industry']]
-    allocation_df.fillna(0, inplace=True)
+    allocation_df = my_portfolio.compute_asset_allocation()
 
     # Now create the plots:
 
@@ -91,7 +79,9 @@ def update_performance(my_portfolio, start_date, end_date):
                   title, label
                   in zip(benchmarks_labels, benchmarks_tickers)}
 
-    return portfolio_df, all_tickers_perf, allocation_df, benchmarks
+    portfolio_kpis = calculate_kpis(my_portfolio, portfolio_df, allocation_df, all_tickers_perf)
+
+    return portfolio_df, all_tickers_perf, allocation_df, benchmarks, portfolio_kpis
 
 
 @st.cache_resource
@@ -203,6 +193,7 @@ def read_transactions(uploaded_file):
 
 
 def _home_allocation(allocation_df):
+    st.write('**Allocation**')
     pills = st.pills(label=None, options=['Asset', 'Type'], default='Asset')
 
     if pills == 'Asset':
@@ -214,38 +205,167 @@ def _home_allocation(allocation_df):
         pie_chart = plot_asset_allocation_by_type(allocation_df)
         st.plotly_chart(pie_chart, use_container_width=True)
 
+def _home_kpis_returns(portfolio_kpis):
+    with st.container():
+        with st.expander('Portfolio Returns'):
+            col1, col2, col3 = st.columns(3)
+            col1.write("**Daily Returns**")
+            col1_text = f"€ {portfolio_kpis['returns']['daily']['abs']:.2f}"
+            col1.markdown(
+                f"<h2 style='color:{'red' if portfolio_kpis['returns']['daily']['abs'] < 0 else 'green'};'>{col1_text}</h2>",
+                unsafe_allow_html=True
+            )
+            col1_text = f"{portfolio_kpis['returns']['daily']['pct']:.2f} %"
+            col1.markdown(
+                # f"<div style='text-align: center;'>"
+                f"<div style='color:{'red' if portfolio_kpis['returns']['daily']['pct'] < 0 else 'green'}; font-size:20px; font-weight:bold;'>{col1_text}</div>",
+                unsafe_allow_html=True
+            )
+
+            col2.write("**Weekly Returns**")
+            col2_text = f"€ {portfolio_kpis['returns']['weekly']['abs']:.2f}"
+            col2.markdown(
+                f"<h2 style='color:{'red' if portfolio_kpis['returns']['daily']['abs'] < 0 else 'green'};'>{col2_text}</h2>",
+                unsafe_allow_html=True
+            )
+            col2_text = f"{portfolio_kpis['returns']['weekly']['pct']:.2f} %"
+            col2.markdown(
+                # f"<div style='text-align: center;'>"
+                f"<div style='color:{'red' if portfolio_kpis['returns']['weekly']['pct'] < 0 else 'green'}; font-size:20px; font-weight:bold;'>{col2_text}</div>",
+                unsafe_allow_html=True
+            )
+
+
+            col3.write("**Monthly Returns**")
+            col3_text = f"€ {portfolio_kpis['returns']['monthly']['abs']:.2f}"
+            col3.markdown(
+                f"<h2 style='color:{'red' if portfolio_kpis['returns']['daily']['abs'] < 0 else 'green'};'>{col3_text}</h2>",
+                unsafe_allow_html=True
+            )
+            col3_text = f"{portfolio_kpis['returns']['monthly']['pct']:.2f} %"
+            col3.markdown(
+                # f"<div style='text-align: center;'>"
+                f"<div style='color:{'red' if portfolio_kpis['returns']['monthly']['pct'] < 0 else 'green'}; font-size:20px; font-weight:bold;'>{col3_text}</div>",
+                unsafe_allow_html=True
+            )
+
+            # col1.metric("Daily Returns",
+            #             f"€ {portfolio_kpis['returns']['daily']['abs']:.2f}",
+            #             delta=f"{portfolio_kpis['returns']['daily']['pct']:.2f} %",
+            #             border=False)
+            # col2.metric("Weekly Returns",
+            #             f"€ {portfolio_kpis['returns']['weekly']['abs']:.2f}",
+            #             delta=f"{portfolio_kpis['returns']['weekly']['pct']:.2f} %",
+            #             border=False)
+            # col3.metric("Monthly Returns",
+            #             f"€ {portfolio_kpis['returns']['monthly']['abs']:.2f}",
+            #             delta=f"{portfolio_kpis['returns']['monthly']['pct']:.2f} %",
+            #             border=False)
+
+def _home_kpis_ticker(portfolio_kpis):
+    with st.container():
+        with st.expander('Best/Worst Assets'):
+            best_ticker = portfolio_kpis["best_ticker"]
+            worst_ticker = portfolio_kpis["worst_ticker"]
+
+            col1, col2, col3 = st.columns(3)
+
+            col1.write("**Best Performing Ticker**")
+            col1_text = f"{best_ticker['ticker']}"
+            col1.markdown(
+                f"<h3>{col1_text}</h3>",
+                unsafe_allow_html=True
+            )
+            col2.write('**Value**')
+            col2_text = f"€ {best_ticker['unrealized_gains']:.2f}"
+            col2.markdown(
+                f"<h3>{col2_text}</h3>",
+                unsafe_allow_html=True
+            )
+            col3.write('**Performance**')
+            col3_text = f"{best_ticker['performance']:.2f} %"
+            col3.markdown(
+                f"<h3 style='color:{'red' if best_ticker['performance'] < 0 else 'green'};'>{col3_text}</h3>",
+                unsafe_allow_html=True
+            )
+
+            col1.divider()
+            col2.divider()
+            col3.divider()
+
+            col1.write("**Worst Performing Ticker**")
+            col1_text = f"{worst_ticker['ticker']}"
+            col1.markdown(
+                f"<h3>{col1_text}</h3>",
+                unsafe_allow_html=True
+            )
+            col2.write('**Value**')
+            col2_text = f"€ {worst_ticker['unrealized_gains']:.2f}"
+            col2.markdown(
+                f"<h3>{col2_text}</h3>",
+                unsafe_allow_html=True
+            )
+            col3.write('**Performance**')
+            col3_text = f"{worst_ticker['performance']:.2f} %"
+            col3.markdown(
+                f"<h3 style='color:{'red' if worst_ticker['performance'] < 0 else 'green'};'>{col3_text}</h3>",
+                unsafe_allow_html=True
+            )
+
+            # col2.write("**Weekly Returns**")
+            # col2_text = f"€ {portfolio_kpis['returns']['weekly']['abs']:.2f}"
+            # col2.markdown(
+            #     f"<h2 style='color:{'red' if portfolio_kpis['returns']['daily']['abs'] < 0 else 'green'};'>{col2_text}</h2>",
+            #     unsafe_allow_html=True
+            # )
+            # col2_text = f"{portfolio_kpis['returns']['weekly']['pct']:.2f} %"
+            # col2.markdown(
+            #     # f"<div style='text-align: center;'>"
+            #     f"<div style='color:{'red' if portfolio_kpis['returns']['weekly']['pct'] < 0 else 'green'}; font-size:20px; font-weight:bold;'>{col2_text}</div>",
+            #     unsafe_allow_html=True
+            # )
+            #
+            # col3.write("**Monthly Returns**")
+            # col3_text = f"€ {portfolio_kpis['returns']['monthly']['abs']:.2f}"
+            # col3.markdown(
+            #     f"<h2 style='color:{'red' if portfolio_kpis['returns']['daily']['abs'] < 0 else 'green'};'>{col3_text}</h2>",
+            #     unsafe_allow_html=True
+            # )
+            # col3_text = f"{portfolio_kpis['returns']['monthly']['pct']:.2f} %"
+            # col3.markdown(
+            #     # f"<div style='text-align: center;'>"
+            #     f"<div style='color:{'red' if portfolio_kpis['returns']['monthly']['pct'] < 0 else 'green'}; font-size:20px; font-weight:bold;'>{col3_text}</div>",
+            #     unsafe_allow_html=True
+            # )
+            #
+            # col1, col2, col3, _ = st.columns([1, 1, 1, 2])
+            # with col1:
+            #     st.metric("Best Performing Ticker", best_ticker['ticker'])
+            #     st.metric("Worst Performing Ticker", worst_ticker['ticker'])
+            #
+            # with col2:
+            #     st.metric("Value", f"€ {best_ticker['unrealized_gains']:.2f}")
+            #     st.metric("Value", f"€ {worst_ticker['unrealized_gains']:.2f}")
+            #
+            # with col3:
+            #     st.metric("Performance", f"{best_ticker['performance']:.2f} %")
+            #     st.metric("Performance", f"{worst_ticker['performance']:.2f} %")
 
 def _kpis(portfolio_kpis):
-    cols = st.columns([1,1,1])
+    cols = st.columns([1, 1, 1])
     with cols[0]:
-        st.subheader(f"Total Value")
+        st.subheader(f"**Total Value**")
         st.header(f"€ {portfolio_kpis['value']:,.0f}")
     with cols[1]:
         st.subheader(f"Gain/Loss")
         st.header(f"€ {portfolio_kpis['unrealized_gains']:.2f}")
     with cols[2]:
         st.subheader(f"Performance")
-        st.header(f"€ {portfolio_kpis['performance']:.2f}")
+        st.header(f"{portfolio_kpis['performance']:.2f} %")
 
     st.divider()
 
-    with st.expander('Returns'):
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Daily Returns",
-                    f"€ {portfolio_kpis['returns']['daily']['abs']:.2f}",
-                    delta=f"{portfolio_kpis['returns']['daily']['pct']:.2f} %",
-                    border=False)
-        col2.metric("Weekly Returns",
-                    f"€ {portfolio_kpis['returns']['weekly']['abs']:.2f}",
-                    delta=f"{portfolio_kpis['returns']['weekly']['pct']:.2f} %",
-                    border=False)
-        col3.metric("Monthly Returns",
-                    f"€ {portfolio_kpis['returns']['monthly']['abs']:.2f}",
-                    delta=f"{portfolio_kpis['returns']['monthly']['pct']:.2f} %",
-                    border=False)
-
-
-
+@st.cache_data
 def _general_performance(portfolio_df):
     annotated_line_chart = plot_performance(
         portfolio_df=portfolio_df,
@@ -255,7 +375,6 @@ def _general_performance(portfolio_df):
         perf_col="Performance (%)",  # or "Cumulative Return (%)"
         portfolio_label="My Portfolio",
         item_labels=None,
-        #title="Portfolio, Tickers, and Benchmarks Performance"
     )
     st.plotly_chart(annotated_line_chart)
 
@@ -263,46 +382,45 @@ def _general_performance(portfolio_df):
 def render_home_tab(allocation_df, portfolio_kpis, portfolio_df):
     transactions = st.session_state.get("transactions")
     if transactions is not None:
-        col1, _, col2 = st.columns([2,0.5,2])
+        col1, _, col2 = st.columns([2, 0.2, 1])
         with col1:
-            st.header("Portfolio KPIs")
+            st.header("Portfolio")
             _kpis(portfolio_kpis)
+            _home_kpis_returns(portfolio_kpis)
             _general_performance(portfolio_df)
         with col2:
-            st.header("Asset Allocation")
+            st.header("Assets")
+            _home_kpis_ticker(portfolio_kpis)
+            st.divider()
             _home_allocation(allocation_df)
-
-        # # Unrealized vs Realized Gains (Bar Chart)
-        # st.subheader("Realized vs. Unrealized Gains")
-        # gains_bar_chart = plot_bar_realized_vs_unrealized(allocation_df)
-        # st.plotly_chart(gains_bar_chart, use_container_width=True)
 
     else:
         st.warning("Please upload a CSV file in the Home tab to view asset allocation.")
 
 
-def _portfolio_performance(my_portfolio, start_date, end_date):
-    portfolio_df, all_tickers_perf, allocation_df, benchmarks = update_performance(my_portfolio,
-                                                                                   start_date,
-                                                                                   end_date)
-    portfolio_kpis = calculate_kpis(my_portfolio, portfolio_df, allocation_df, all_tickers_perf)
-    benchmarks_tickers = [df['title'].iloc[0] for x, df in benchmarks.items()]
+def _portfolio_performance(portfolio_kpis, cur_vol, data_dict, portfolio_df, selected_benchmark_ticker):
+    col1, col2, col3, col4 = st.columns(4)
 
-    st.subheader("Portfolio Performance Over Time")
-    cols = st.columns([1, 2])
-    with cols[0]:
-        col, _ = st.columns([2, 1])
-        with col:
-            selected_benchmark_ticker = st.multiselect("Select Benchmark:", benchmarks_tickers)
-            data_dict = {ticker: benchmarks[ticker] for ticker in selected_benchmark_ticker}
-
-    with cols[1]:
-        # st.text("Portfolio KPIs")
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Total Value", f"€ {portfolio_kpis['value']:,.0f}", border=True)
-        col2.metric("Gain/Loss", f"€ {portfolio_kpis['unrealized_gains']:.2f}", border=True)
-        col3.metric("Performance", f"{portfolio_kpis['performance']:.0f} %", help="Portfolio performance to date.",
-                    border=True)
+    col1.subheader('**Total Value**')
+    col1.header(f"€ {portfolio_kpis['value']:,.0f}")
+    col2.subheader('**Gain/Loss**')
+    col2_text = f"€ {portfolio_kpis['unrealized_gains']:.2f}"
+    col2.markdown(
+        f"<h2 style='color:{'red' if portfolio_kpis['unrealized_gains'] < 0 else 'green'};'>{col2_text}</h2>",
+        unsafe_allow_html=True
+    )
+    col3.subheader('**Performance**')
+    col3_text = f"{portfolio_kpis['performance']:.0f} %"
+    col3.markdown(
+        f"<h2 style='color:{'red' if portfolio_kpis['performance'] < 0 else 'green'};'>{col3_text}</h2>",
+        unsafe_allow_html=True
+    )
+    col4.subheader('**Volatility**')
+    col4_text = f'{cur_vol * 100:.0f} %'
+    col4.markdown(
+        f"<h2 >{col4_text}</h2>",
+        unsafe_allow_html=True
+    )
 
     st.markdown("---")
 
@@ -314,62 +432,83 @@ def _portfolio_performance(my_portfolio, start_date, end_date):
         perf_col="Performance (%)",  # or "Cumulative Return (%)"
         portfolio_label="My Portfolio",
         item_labels=selected_benchmark_ticker,
-        title="Portfolio, Tickers, and Benchmarks Performance"
+        # title="Portfolio, Tickers, and Benchmarks Performance"
     )
     st.plotly_chart(annotated_line_chart)
 
     st.markdown("---")
 
-def _asset_performance(my_portfolio, start_date, end_date):
-    portfolio_df, all_tickers_perf, allocation_df, benchmarks = update_performance(my_portfolio,
-                                                                                   start_date,
-                                                                                   end_date)
-    portfolio_kpis = calculate_kpis(my_portfolio, portfolio_df, allocation_df, all_tickers_perf)
+
+def _asset_performance(portfolio_kpis, cur_vol, data_dict, portfolio_df, selected_benchmark_ticker):
     best_ticker = portfolio_kpis["best_ticker"]
     worst_ticker = portfolio_kpis["worst_ticker"]
 
-    st.subheader("Asset Performance Over Time")
-    cols = st.columns([1, 2, 1])
+    selected_ticker = st.multiselect("Select Ticker:", tickers, default=tickers[0])
+    ticker_data_dict = {ticker: all_tickers_perf[ticker] for ticker in selected_ticker}
+    titles = [value['title'].iloc[0] for _, value in ticker_data_dict.items()]
+    # st.write(data_dict['EVISO.MI'])
 
-    with cols[0]:
-        selected_ticker = st.multiselect("Select Ticker:", tickers, default=tickers[0])
-        data_dict = {ticker: all_tickers_perf[ticker] for ticker in selected_ticker}
-        titles = [value['title'].iloc[0] for _, value in data_dict.items()]
-
-    with cols[1]:
-
-
-
-    with cols[2]:
-        # st.text("Portfolio KPIs")
-        col1, col2, col3, _ = st.columns([1, 1, 1, 2])
-        with col1:
-            st.metric("Best Performing Ticker", best_ticker['ticker'])
-            st.metric("Worst Performing Ticker", worst_ticker['ticker'])
-
-        with col2:
-            st.metric("Value", f"€ {best_ticker['unrealized_gains']:.2f}")
-            st.metric("Value", f"€ {worst_ticker['unrealized_gains']:.2f}")
-
-        with col3:
-            st.metric("Performance", f"{best_ticker['performance']:.2f} %")
-            st.metric("Performance", f"{worst_ticker['performance']:.2f} %")
-
-    st.markdown("---")
+    final_data_dict = {**ticker_data_dict, **data_dict}
+    final_titles = titles + selected_benchmark_ticker
+    # st.write(final_titles)
 
     if selected_ticker:
         perf_chart = plot_performance(
             portfolio_df=None,
-            items=data_dict,
+            items=final_data_dict,
             color='orange',
             # transactions=transactions,
             date_col="Date",
             perf_col="Performance (%)",
             portfolio_label="Portfolio",
-            item_labels=titles,
-            title=f"Ticker Performance Over Time"
+            item_labels=final_titles,
+            # title=f"Ticker Performance Over Time"
         )
         st.plotly_chart(perf_chart)
+
+    # with cols[2]:
+    col0, col1, col2, col3, col4 = st.columns(5)
+    col0.subheader('**Asset**')
+    col1.subheader('**Total Value**')
+    col2.subheader('**Gain/Loss**')
+    col3.subheader('**Performance**')
+    col4.subheader('**Volatility**')
+    for t in selected_ticker:
+        df = ticker_data_dict[t].iloc[-1]
+        vol = (ticker_data_dict[t]["Daily Return (%)"] / 100).std() * (252 ** 0.5)
+
+        col0.header(f"**{df['Ticker']}**")
+        col1.header(f"€ {df['Market Value']:,.0f}")
+        col2_text = f"€ {df['Unrealized Gains']:.2f}"
+        col2.markdown(
+            f"<h2 style='color:{'red' if df['Unrealized Gains'] < 0 else 'green'};'>{col2_text}</h2>",
+            unsafe_allow_html=True
+        )
+        col3_text = f"{df['Performance (%)']:.0f} %"
+        col3.markdown(
+            f"<h2 style='color:{'red' if df['Performance (%)'] < 0 else 'green'};'>{col3_text}</h2>",
+            unsafe_allow_html=True
+        )
+        col4_text = f'{vol * 100:.0f} %'
+        col4.markdown(
+            f"<h2 >{col4_text}</h2>",
+            unsafe_allow_html=True
+        )
+
+        # col1, col2, col3, _ = st.columns([1, 1, 1, 2])
+        # with col1:
+        #     st.metric("Best Performing Ticker", best_ticker['ticker'])
+        #     st.metric("Worst Performing Ticker", worst_ticker['ticker'])
+        #
+        # with col2:
+        #     st.metric("Value", f"€ {best_ticker['unrealized_gains']:.2f}")
+        #     st.metric("Value", f"€ {worst_ticker['unrealized_gains']:.2f}")
+        #
+        # with col3:
+        #     st.metric("Performance", f"{best_ticker['performance']:.2f} %")
+        #     st.metric("Performance", f"{worst_ticker['performance']:.2f} %")
+
+
 def render_performance_tab():
     transactions = st.session_state.get("transactions")
     min_date = st.session_state.get('start_date')
@@ -378,19 +517,34 @@ def render_performance_tab():
     today = date.today()
 
     if transactions is not None:
-        # _,selection_col,_ = st.columns([1])
-        # with selection_col:
-        options = ["Portfolio", "Assets"]
-        st.subheader('Choose the target analysis')
-        selection = st.pills(label=None, options=options, selection_mode="single", default=options[0])
-        start_date, end_date = timeframe_input(min_date, max_date)
+        header_cols = st.columns(2)
+
+        with header_cols[0]:
+            options = ["Portfolio", "Assets"]
+            st.subheader('Choose the target analysis')
+            selection = st.pills(label=None, options=options, selection_mode="single", default=options[0])
+        start_date, end_date = timeframe_input(min_date, max_date, header_cols[0])
+
+        portfolio_df, all_tickers_perf, allocation_df, benchmarks, portfolio_kpis = update_performance(my_portfolio,
+                                                                                                       start_date,
+                                                                                                       end_date)
+        _, _, cur_vol = my_portfolio.current_weights()
+        benchmarks_tickers = [df['title'].iloc[0] for x, df in benchmarks.items()]
+
+        with header_cols[1]:
+            st.subheader('Choose the Benchmark to compare')
+            selected_benchmark_ticker = st.multiselect("Select Benchmark:", benchmarks_tickers)
+            data_dict = {ticker: benchmarks[ticker] for ticker in selected_benchmark_ticker}
+
         st.divider()
 
         if selection == options[0]:
-            _portfolio_performance(my_portfolio, start_date, end_date)
+            st.subheader("Portfolio Performance Over Time")
+            _portfolio_performance(portfolio_kpis, cur_vol, data_dict, portfolio_df, selected_benchmark_ticker)
 
         elif selection == options[1]:
-            _asset_performance(my_portfolio, start_date, end_date)
+            st.subheader("Asset Performance Over Time")
+            _asset_performance(portfolio_kpis, cur_vol, data_dict, portfolio_df, selected_benchmark_ticker)
 
 
     else:
@@ -467,7 +621,8 @@ if __name__ == '__main__':
         uploaded_file = st.session_state["uploaded_file"]
         transactions = st.session_state.get("transactions")
 
-    home_tab, perf_tab, allocation_tab, transaction_tab = st.tabs(["Home", "Performance", "Allocation", "Transactions"])
+    home_tab, perf_tab, optimization_tab, optimization_tab_2, transaction_tab = st.tabs(
+        ["Home", "Performance", "Optimization", 'Test', "Transactions"])
 
     if transactions is not None and uploaded_file is not None:
         # st.info('Loading Data...')
@@ -497,8 +652,179 @@ if __name__ == '__main__':
         render_performance_tab()
 
     # Allocation Tab
-    with allocation_tab:
-        pass
+    with optimization_tab:
+
+        if my_portfolio is not None and \
+                allocation_df is not None and \
+                portfolio_kpis is not None and \
+                portfolio_df is not None:
+            st.header("Portfolio Optimization")
+
+            target_return = None
+            target_volatility = None
+            risk_free_rate = 0.02
+            curr_weights, cur_ret, cur_vol = my_portfolio.current_weights()
+            curr_weights_sorted = curr_weights['Allocation(%)'].sort_values(ascending=False) \
+                .to_frame() \
+                .T \
+                .round(0)
+            _, mean_returns, cov_matrix = my_portfolio.get_returns_matrix()
+            df_random, frontiers, port_opt = optimize(mean_returns,
+                                                      cov_matrix,
+                                                      risk_free_rate=risk_free_rate,
+                                                      target_return=target_return,
+                                                      target_volatility=target_volatility
+                                                      )
+
+            cols = st.columns([1, 0.2, 1])
+            with cols[0]:
+                st.write('**Current Portfolio Allocation**')
+                st.dataframe(curr_weights_sorted, use_container_width=True)
+
+                fig = plot_optimization(df_random, frontiers, port_opt, (cur_ret, cur_vol))
+                st.plotly_chart(fig, use_container_width=True)
+            with cols[2]:
+                pills = st.pills("Choose your Strategy", options=STRATEGIES, default=STRATEGIES[0])
+                target_disabled = pills != TARGET_RETURN
+                risk_disabled = pills != SAME_RISK
+
+                input_cols = st.columns(2)
+                with input_cols[0]:
+                    user_input_tr = st.number_input("Desired Annual Return (%)",
+                                                    value=5.0,
+                                                    step=1.0,
+                                                    disabled=target_disabled)
+                    target_return = user_input_tr / 100.0
+                with input_cols[1]:
+                    user_input_tv = st.number_input("Desired Volatility (%)",
+                                                    value=15.0,
+                                                    step=1.0,
+                                                    disabled=risk_disabled)
+                    target_volatility = user_input_tv / 100.0
+
+                df_random, frontiers, port_opt = optimize(mean_returns,
+                                                          cov_matrix,
+                                                          risk_free_rate=risk_free_rate,
+                                                          target_return=target_return,
+                                                          target_volatility=target_volatility
+                                                          )
+                st.divider()
+                space = st.columns(3)
+                space[0].metric(label='Expected Annual Return',
+                                value=f"{port_opt[pills]['ret'] * 100:.2f} %")
+                space[1].metric(label='Annual Volatility',
+                                value=f"{port_opt[pills]['vol'] * 100:.2f} %")
+                space[2].metric(label='Sharpe Ratio',
+                                value=f"{port_opt[pills]['sharpe']:.2f}")
+                st.divider()
+            with cols[2]:
+                st.write(f'**New Allocation** following **{pills} strategy**')
+                opt_weights = pd.DataFrame(port_opt[pills]['weights'], index=['%'])
+                opt_allocation = (opt_weights * 100).round(0)
+                st.dataframe(opt_allocation, use_container_width=True)
+                st.divider()
+
+                st.write(f'**Allocation Difference from Current Portfolio**')
+                diff_curr_weights = curr_weights.rename(columns={'Allocation(%)': '%'})['%'].sort_index() / 100
+                # st.dataframe(diff_curr_weights.to_frame().T, use_container_width=True)
+                diff_opt_weights = opt_weights.T.sort_index()
+                # st.dataframe(diff_opt_weights.T, use_container_width=True)
+                diff_weights = ((diff_opt_weights.T - diff_curr_weights.T) * 100)
+                diff_weights = diff_weights.style.applymap(colorize) \
+                    .format("{:.0f}") \
+                    .set_properties(**{'font-size': '24pt'})
+
+                st.dataframe(diff_weights, use_container_width=True)
+                # st.text('Green coloured values -> ')
+
+    with optimization_tab_2:
+
+        if my_portfolio is not None and \
+                allocation_df is not None and \
+                portfolio_kpis is not None and \
+                portfolio_df is not None:
+            st.header("Portfolio Optimization")
+
+            target_return = None
+            target_volatility = None
+            risk_free_rate = 0.02
+            curr_weights, cur_ret, cur_vol = my_portfolio.current_weights()
+            curr_weights_sorted = curr_weights['Allocation(%)'].sort_values(ascending=False) \
+                .to_frame() \
+                .T \
+                .round(0)
+            _, mean_returns, cov_matrix = my_portfolio.get_returns_matrix()
+            # df_random, frontiers, port_opt = optimize(mean_returns,
+            #                                           cov_matrix,
+            #                                           risk_free_rate=risk_free_rate,
+            #                                           target_return=target_return,
+            #                                           target_volatility=target_volatility
+            #                                           )
+
+            st.write('**Current Portfolio Allocation**')
+            st.dataframe(curr_weights_sorted, use_container_width=False)
+            st.divider()
+
+            pills = st.pills("Choose your Strategy", options=STRATEGIES, default=STRATEGIES[0], key='test')
+            target_disabled = pills != TARGET_RETURN
+            risk_disabled = pills != SAME_RISK
+
+            input_cols = st.columns(2)
+            with input_cols[0]:
+                user_input_tr = st.number_input("Desired Annual Return (%)",
+                                                value=5.0,
+                                                step=1.0,
+                                                disabled=target_disabled,
+                                                key='test_1')
+                target_return = user_input_tr / 100.0
+            with input_cols[1]:
+                user_input_tv = st.number_input("Desired Volatility (%)",
+                                                value=15.0,
+                                                step=1.0,
+                                                disabled=risk_disabled,
+                                                key='test_2')
+                target_volatility = user_input_tv / 100.0
+
+            df_random, frontiers, port_opt = optimize(mean_returns,
+                                                      cov_matrix,
+                                                      risk_free_rate=risk_free_rate,
+                                                      target_return=target_return,
+                                                      target_volatility=target_volatility
+                                                      )
+            fig = plot_optimization(df_random, frontiers, port_opt, (cur_ret, cur_vol))
+            st.plotly_chart(fig, use_container_width=True)
+
+
+
+
+
+            st.divider()
+            space = st.columns(3)
+            space[0].metric(label='Expected Annual Return',
+                            value=f"{port_opt[pills]['ret'] * 100:.2f} %")
+            space[1].metric(label='Annual Volatility',
+                            value=f"{port_opt[pills]['vol'] * 100:.2f} %")
+            space[2].metric(label='Sharpe Ratio',
+                            value=f"{port_opt[pills]['sharpe']:.2f}")
+            st.divider()
+
+            st.write(f'**New Allocation** following **{pills} strategy**')
+            opt_weights = pd.DataFrame(port_opt[pills]['weights'], index=['%'])
+            opt_allocation = (opt_weights * 100).round(0)
+            st.dataframe(opt_allocation, use_container_width=True)
+            st.divider()
+
+            st.write(f'**Allocation Actions**')
+            diff_curr_weights = curr_weights.rename(columns={'Allocation(%)': '%'})['%'].sort_index() / 100
+            # st.dataframe(diff_curr_weights.to_frame().T, use_container_width=True)
+            diff_opt_weights = opt_weights.T.sort_index()
+            # st.dataframe(diff_opt_weights.T, use_container_width=True)
+            diff_weights = ((diff_opt_weights.T - diff_curr_weights.T) * 100)
+            diff_weights = diff_weights.style.applymap(colorize) \
+                .format("{:.0f}") \
+                .set_properties(**{'font-size': '24pt'})
+
+            st.dataframe(diff_weights, use_container_width=True)
 
     # Transactions Tab
     with transaction_tab:

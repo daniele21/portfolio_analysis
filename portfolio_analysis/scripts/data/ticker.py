@@ -128,6 +128,9 @@ class Ticker:
         df['ticker'] = self.symbol
         df['title'] = self.title
 
+        daily_vol = (df["Daily Return (%)"]/100).std()
+        df['Volatility'] =  daily_vol * (252 ** 0.5)
+
         self.data = df
         return self.data
 

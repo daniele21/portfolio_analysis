@@ -2,11 +2,89 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.express.colors import qualitative as qc
+import matplotlib.colors as mcolors
 
+# Create a linear gradient from one color to another (e.g., lightblue to darkblue)
+cmap = mcolors.LinearSegmentedColormap.from_list("gradient", ["lightblue", "darkblue"])
+
+# Generate a list of colors for n_segments
+n_segments = 10  # Number of gradient segments
+colors = [mcolors.to_rgba(cmap(i/(n_segments-1)), alpha=0.5) for i in range(n_segments)]
 
 # --------------------------------------------------------------------
 # EXISTING / REFACTORED PLOTS
 # --------------------------------------------------------------------
+
+def plot_optimization(df_random, frontiers, port_opt, current_portfolio_ret_vol):
+
+    fig = px.scatter(
+        df_random,
+        x="Volatility",
+        y="Return",
+        color="Sharpe",
+        color_continuous_scale="RdBu",
+        title=f"Efficient Frontier"
+    )
+    fig.update_traces(marker=dict(size=4))
+
+    fig.add_trace(go.Scatter(
+        x=frontiers['vols'],
+        y=frontiers['rets'],
+        mode='lines',
+        name='Efficient Frontier',
+        line=dict(color='black', width=2),
+        # fill='tozeroy',  # Fill area under the line
+        # fillcolor='rgba(0, 0, 0, 0.05)'
+    ))
+
+    for strategy, color in zip(port_opt.keys(), ['orange', 'yellow', 'black', 'pink']):
+        allocation_text = "<br>".join([f"{ticker}: {weight:.0%}" for ticker, weight in port_opt[strategy]['weights'].items()])
+        fig.add_trace(go.Scatter(
+            x=[port_opt[strategy]['vol']],
+            y=[port_opt[strategy]['ret']],
+            mode='markers',
+            marker=dict(
+                color=color,
+                size=14,  # Increase size for prominence
+                symbol='star',
+                line=dict(width=1.5, color='black'),  # Add a contrasting outline
+                opacity=1  # Ensure fully opaque markers
+            ),
+            name=strategy,
+            text=[f"<b>{strategy}</b><br>{allocation_text}"],
+            hoverinfo='text'
+        ))
+
+    # if current_portfolio_ret_vol is not None:
+    cur_ret, cur_vol = current_portfolio_ret_vol
+    fig.add_trace(go.Scatter(
+        x=[cur_vol],
+        y=[cur_ret],
+        mode='markers',
+        marker=dict(
+            color='red',
+            size=14,  # Increase size for prominence
+            symbol='diamond',
+            line=dict(width=1.5, color='black'),  # Add a contrasting outline
+            opacity=1  # Ensure fully opaque markers
+        ),
+        name='Current Portfolio'
+    ))
+
+    fig.update_layout(
+        xaxis_title="Annualized Volatility (σ)",
+        yaxis_title="Annualized Return (μ)",
+        height=700,
+        legend=dict(
+            orientation="h",
+            x=0.5,
+            y=1.1,  # slightly above the plot
+            xanchor="center"
+        )
+    )
+
+
+    return fig
 
 def create_transaction_annotated_line_chart(portfolio_df, transactions, name_col="Performance"):
     """
@@ -374,7 +452,7 @@ def create_pie_chart(allocation_df):
     Plot the current portfolio allocation (by Ticker).
     Assumes allocation_df has columns ['Ticker', 'Market Value'].
     """
-    fig = px.pie(allocation_df, names='Ticker', values='Market Value')
+    fig = px.pie(allocation_df, names='Ticker', values='MarketValue')
     fig.update_traces(textposition='inside',
                       textinfo='percent+label',
                       insidetextfont=dict(size=14, color='white'),  # Increase font size and ensure good contrast
@@ -910,8 +988,8 @@ def plot_asset_allocation_by_type(allocation_df, type_col='AssetType'):
     Expects allocation_df to have columns [type_col, 'Market Value'].
     """
     # Summarize by asset type
-    df_type = allocation_df.groupby(type_col)['Market Value'].sum().reset_index()
-    fig = px.pie(df_type, names=type_col, values='Market Value')
+    df_type = allocation_df.groupby(type_col)['MarketValue'].sum().reset_index()
+    fig = px.pie(df_type, names=type_col, values='MarketValue')
     fig.update_traces(textposition='inside',
                       textinfo='percent+label',
                       insidetextfont=dict(size=14, color='white'),  # Increase font size and ensure good contrast

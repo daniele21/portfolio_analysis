@@ -1,6 +1,13 @@
 from datetime import date
 from typing import Dict, List, Any
 
+import numpy as np
+from pypfopt.expected_returns import mean_historical_return
+from pypfopt.risk_models import CovarianceShrinkage
+from pypfopt.efficient_frontier import EfficientFrontier
+from pypfopt import plotting
+
+
 import pandas as pd
 import yfinance as yf
 
@@ -327,9 +334,8 @@ class Portfolio:
 
         return portfolio, all_tickers_perf
 
-    # -------------------------------------
-    # 4A) HELPER METHODS FOR KPI COMPUTATION
-    # -------------------------------------
+
+
     def compute_daily_returns(self):
         """
         Return the daily returns as a Series in decimal form, e.g. 0.01 for 1%.
@@ -379,6 +385,104 @@ class Portfolio:
 
         return returns_abs, returns
 
+    def get_returns_matrix(self, frequency=252):
+        """
+        Expects all_tickers_perf: Dict[str, pd.DataFrame],
+        each DataFrame has columns ['Date', 'Daily Return (%)'] or 'Daily Return' in decimal form.
+        Returns a pandas DataFrame: index=Date, columns=ticker, values=daily returns (decimal).
+        """
+        returns_list = []
+        for symbol, df in self.all_tickers_perf.items():
+            temp = df[['Date', 'Daily Return (%)']].copy()
+            # Convert from percentage to decimal if needed
+            temp['Daily Return'] = temp['Daily Return (%)'] / 100.0
+            temp['Ticker'] = symbol
+            returns_list.append(temp)
+
+        all_data = pd.concat(returns_list)
+        # Pivot so that columns=Ticker, rows=Date, values=Daily Return
+        returns_df = all_data.pivot_table(index='Date', columns='Ticker', values='Daily Return')
+        returns_df.dropna(how='all', inplace=True)  # drop rows with all NaN
+
+        mean_returns = returns_df.mean() * frequency
+        cov_matrix = returns_df.cov() * frequency
+        return returns_df, mean_returns, cov_matrix
+
+    def current_weights(self):
+        returns, mean_returns, cov_matrix = self.get_returns_matrix()
+        mean_returns.name='mean'
+
+        allocation_df = self.compute_asset_allocation()
+        allocation_df = allocation_df.set_index('Ticker')
+        allocation_df = allocation_df.loc[mean_returns.to_frame().index]
+
+        current_weights = allocation_df['Allocation(%)'] / 100
+
+        cur_ret = np.sum(current_weights * mean_returns)
+        cur_vol = np.sqrt(current_weights @ cov_matrix.values @ current_weights.T)
+
+        return allocation_df, cur_ret, cur_vol
+
+    def portfolio_optimization(self,
+                               mean_returns,
+                               cov_matrix,
+                               objective='Mac Sharpe',
+                               risk_free_rate=0.02):
+        ef = EfficientFrontier(mean_returns, cov_matrix, weight_bounds=(0, 1))
+
+        if objective == "Max Sharpe":
+            ef.max_sharpe(risk_free_rate=risk_free_rate)
+        elif objective == "Min Volatility":
+            ef.min_volatility()
+        else:
+            # default or raise an error
+            raise ValueError(f"Unknown objective: {objective}")
+
+        cleaned_weights = ef.clean_weights()
+        perf = ef.portfolio_performance(verbose=False,
+                                        risk_free_rate=risk_free_rate)
+        # perf is a tuple: (expected_return, volatility, Sharpe_ratio)
+        # fig, ax = plotting.plot_efficient_frontier(ef, show_assets=True)
+        return cleaned_weights, perf
+
+    def compute_risk_return(self, frequency=252):
+        """
+        returns_df: DataFrame of daily returns (decimal) for each ticker.
+        """
+        # 1) Compute expected annualized returns (default frequency ~ 252 trading days/year)
+        _, daily_returns = self.compute_daily_returns()
+        # df = daily_returns[~np.isinf(daily_returns)]
+
+        mu = mean_historical_return(daily_returns.values, frequency=frequency)
+
+        # 2) Compute covariance matrix
+        S = CovarianceShrinkage(df).ledoit_wolf()
+        return mu, S
+
+    def compute_portfolio_optimization(self):
+        _, daily_returns = self.compute_daily_returns()
+
+    @staticmethod
+    def optimize_portfolio_max_sharpe(mu, S):
+        """
+        Returns a dict of optimal weights using maximum Sharpe ratio method.
+        """
+        ef = EfficientFrontier(mu, S)
+        weights = ef.max_sharpe()
+        cleaned_weights = ef.clean_weights()
+        return cleaned_weights
+
+    @staticmethod
+    def get_efficient_frontier(mu, S):
+        # Create an Efficient Frontier object
+        ef = EfficientFrontier(mu, S)
+
+        # Evaluate points along the frontier
+        frontier_returns, frontier_volatility, frontier_weights = ef.efficient_frontier(
+            points=100,  # how many points to sample along the EF
+        )
+        return frontier_returns, frontier_volatility, frontier_weights
+
     def compute_volatility(self, annualize: bool = True) -> float:
         """
         Calculate the standard deviation of daily returns. Annualize if desired.
@@ -419,110 +523,27 @@ class Portfolio:
             last_row = df_.iloc[-1]
             mv = last_row["Market Value"]
             asset_type = last_row["AssetType"]
-            alloc_percent = (mv / total_portfolio_value * 100) if total_portfolio_value != 0 else 0
-            allocations.append((symbol, asset_type, mv, alloc_percent))
-
-        df_alloc = pd.DataFrame(allocations, columns=["Ticker", "AssetType", "MarketValue", "Allocation(%)"])
-        # If we want to group by asset type:
-        # df_alloc = df_alloc.groupby("AssetType").sum(numeric_only=True)
-        return df_alloc
-
-    def compute_sector_industry_breakdown(self) -> pd.DataFrame:
-        """
-        Returns a DataFrame showing final-day allocation by Sector and Industry.
-        """
-        if not self.all_tickers_perf:
-            raise ValueError("No ticker performance data. Run calculate_portfolio_performance() first.")
-
-        breakdowns = []
-        total_portfolio_value = self.portfolio_df["Total Value"].iloc[-1]
-        for symbol, df_ in self.all_tickers_perf.items():
-            if df_.empty:
-                continue
-            last_row = df_.iloc[-1]
-            mv = last_row["Market Value"]
             sector = last_row["Sector"]
             industry = last_row["Industry"]
+            title = last_row['Title']
+            unrealised_gain = last_row['Unrealized Gains']
+            realised_gain = last_row['Realized Gains']
             alloc_percent = (mv / total_portfolio_value * 100) if total_portfolio_value != 0 else 0
-            breakdowns.append((symbol, sector, industry, mv, alloc_percent))
+            allocations.append((symbol,
+                                title,
+                                asset_type,
+                                sector,
+                                industry,
+                                mv,
+                                alloc_percent,
+                                unrealised_gain,
+                                realised_gain))
 
-        df_sector = pd.DataFrame(breakdowns, columns=["Ticker", "Sector", "Industry", "MarketValue", "Allocation(%)"])
-        return df_sector
-
-    def compute_concentration_risk(self) -> pd.DataFrame:
-        """
-        Returns a DataFrame of tickers sorted by their final-day % of the total portfolio.
-        Helps identify large positions that might be a concentration risk.
-        """
-        df_alloc = self.compute_asset_allocation()
-        df_alloc.sort_values(by="Allocation(%)", ascending=False, inplace=True)
+        df_alloc = pd.DataFrame(allocations,
+                                columns=["Ticker", 'Title', "AssetType", 'Sector',
+                                          'Industry', "MarketValue", "Allocation(%)",
+                                         'Unrealized Gains', 'Realized Gains'])
         return df_alloc
-
-    def compute_contribution_to_return(self) -> pd.DataFrame:
-        """
-        Approximate each ticker's contribution to portfolio returns over time.
-        - We use a 'weighted daily return' approach.
-        """
-        if not self.all_tickers_perf:
-            raise ValueError("No ticker performance data. Run calculate_portfolio_performance() first.")
-
-        # 1. We need the daily total portfolio value to compute weights
-        portfolio_df = self.portfolio_df.set_index("Date")
-
-        # 2. For each ticker, compute daily return in decimal form
-        contributions = []
-        for symbol, df_ in self.all_tickers_perf.items():
-            df_temp = df_.copy()
-            df_temp.set_index("Date", inplace=True)
-
-            # Ticker's daily raw return in decimal
-            # We'll approximate from day to day based on "Market Value"
-            # daily_ticker_return = df_temp["Market Value"].pct_change() # if you want MV-based
-            # But let's keep it consistent with "Performance" (which is fraction-based)
-            # df_temp["Daily Ticker Return"] = df_temp["Performance"]  # This is fraction (not %)
-            # or we can recast from % if needed
-
-            df_temp["Daily Ticker Return"] = df_temp["Performance (%)"]  # Performance is fraction, e.g. 0.05 = 5%
-            df_temp["WeightInPortfolio"] = (
-                    df_temp["Market Value"] / portfolio_df["Total Value"]
-            )
-
-            # Ticker's contribution on each day = daily_return * weight
-            df_temp["Daily Contribution"] = df_temp["Daily Ticker Return"] * df_temp["WeightInPortfolio"]
-
-            # Summation over the entire period
-            total_contribution = df_temp["Daily Contribution"].sum()
-            # Convert to a "percentage point" or keep as fraction
-            # e.g., 0.10 means 10% total contribution
-            contributions.append((symbol, total_contribution))
-
-        df_contrib = pd.DataFrame(contributions, columns=["Ticker", "Contribution"])
-        df_contrib.sort_values("Contribution", ascending=False, inplace=True)
-        return df_contrib
-
-    def compute_benchmark_comparison(self, benchmark_symbol: str) -> pd.DataFrame:
-        """
-        Fetch benchmark data and compare the daily returns side-by-side with the portfolio.
-        Return a DataFrame with columns: [Date, Portfolio Daily %, Benchmark Daily %].
-        """
-        # 1. Fetch the benchmark as a Ticker
-        benchmark_ticker = Ticker(benchmark_symbol)
-        start_date = self.portfolio_df["Date"].min()
-        end_date = self.portfolio_df["Date"].max()
-        benchmark_ticker.fetch_price_data(start_date, end_date)
-        benchmark_ticker.calculate_performance()
-
-        # 2. Build a daily returns DataFrame
-        bench_df = benchmark_ticker.data.copy()
-        bench_df["Daily Bench Return (%)"] = bench_df["Close"].pct_change() * 100
-        bench_df.reset_index(inplace=True)
-        bench_df.rename(columns={"index": "Date"}, inplace=True)
-
-        # 3. Merge with portfolio daily performance
-        portfolio_df = self.portfolio_df[["Date", "Daily Performance (%)"]].copy()
-        df_compare = pd.merge(portfolio_df, bench_df[["Date", "Daily Bench Return (%)"]], on="Date", how="outer")
-        df_compare.fillna(0, inplace=True)
-        return df_compare
 
     def __repr__(self):
         return f"<Portfolio name={self.name}, Transactions={len(self.transactions)}>"
@@ -591,10 +612,10 @@ def calculate_kpis(portfolio,
                        'annualized': annualized_vol},
         'returns': {'daily':{'abs': daily_returns_abs[-2],
                              'pct': daily_returns[-2]},
-                    'weekly': {'abs': weekly_returns_abs[-2],
-                              'pct': weekly_returns[-2]},
-                    'monthly': {'abs': monthly_returns_abs[-1],
-                              'pct': monthly_returns[-1]},
+                    'weekly': {'abs': weekly_returns_abs[-2] if len(weekly_returns_abs) > 1 else 0,
+                              'pct': weekly_returns[-2] if len(weekly_returns) > 1 else 0},
+                    'monthly': {'abs': monthly_returns_abs[-1] if len(monthly_returns_abs) > 1 else 0,
+                              'pct': monthly_returns[-1] if len(monthly_returns) > 1 else 0},
                     },
         "unrealized_gains": unrealized_gains,
         "realized_gains": realized_gains,
