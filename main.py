@@ -376,7 +376,7 @@ def _general_performance(portfolio_df):
         portfolio_label="My Portfolio",
         item_labels=None,
     )
-    st.plotly_chart(annotated_line_chart)
+    st.plotly_chart(annotated_line_chart,key='one')
 
 
 def render_home_tab(allocation_df, portfolio_kpis, portfolio_df):
@@ -440,8 +440,6 @@ def _portfolio_performance(portfolio_kpis, cur_vol, data_dict, portfolio_df, sel
 
 
 def _asset_performance(portfolio_kpis, cur_vol, data_dict, portfolio_df, selected_benchmark_ticker):
-    best_ticker = portfolio_kpis["best_ticker"]
-    worst_ticker = portfolio_kpis["worst_ticker"]
 
     selected_ticker = st.multiselect("Select Ticker:", tickers, default=tickers[0])
     ticker_data_dict = {ticker: all_tickers_perf[ticker] for ticker in selected_ticker}
