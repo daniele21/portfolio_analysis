@@ -187,8 +187,8 @@ def compute_performance_by_date(portfolio, benchmark_collection, start_date, end
 @st.cache_data
 def read_transactions(uploaded_file):
     print('> Reading Transaction')
-    transactions = pd.read_csv(uploaded_file, parse_dates=['Date'])
-    transactions['Date'] = pd.to_datetime(transactions['Date'], format="%d/%m/%Y")
+    date_parser = lambda x: datetime.strptime(x, "%d/%m/%Y")
+    transactions = pd.read_csv(uploaded_file, parse_dates=['Date'], date_parser=date_parser)
     return transactions
 
 
@@ -382,7 +382,7 @@ def _general_performance(portfolio_df):
 def render_home_tab(allocation_df, portfolio_kpis, portfolio_df):
     transactions = st.session_state.get("transactions")
     if transactions is not None:
-        col1, _, col2 = st.columns([2, 0.2, 1])
+        col1, _, col2 = st.columns([2, 0.1, 1.2])
         with col1:
             st.header("Portfolio")
             _kpis(portfolio_kpis)
@@ -558,7 +558,7 @@ def timeframe_input(min_date, max_date, container=None):
 
     with container:
         with st.form('Configure Date Range', border=False):
-            col1, col2, col3, _ = st.columns([1, 1, 2, 3], gap='medium')
+            col1, col2, col3 = st.columns([1, 1, 2], gap='medium')
             with col1:
                 start_date = st.date_input(
                     "Start Date",
@@ -790,7 +790,7 @@ if __name__ == '__main__':
                                                       target_volatility=target_volatility
                                                       )
             fig = plot_optimization(df_random, frontiers, port_opt, (cur_ret, cur_vol))
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, key='Test')
 
 
 

@@ -102,14 +102,17 @@ def optimize(mean_returns,
     if target_return is None:
         target_return = 0.1
     ef_strategy = EfficientFrontier(mean_returns, cov_matrix, weight_bounds=(0, 1))
-    ef_strategy.efficient_return(target_return=target_return)
-    cleaned_weights = ef_strategy.clean_weights()
-    chosen_ret, chosen_vol, chosen_sharpe = ef_strategy.portfolio_performance(risk_free_rate=risk_free_rate,
-                                                                              verbose=False)
-    port_opt[TARGET_RETURN] = {'ret': float(chosen_ret),
-                               'vol': float(chosen_vol),
-                               'sharpe': float(chosen_sharpe),
-                               'weights': cleaned_weights}
+    try:
+        ef_strategy.efficient_return(target_return=target_return)
+        cleaned_weights = ef_strategy.clean_weights()
+        chosen_ret, chosen_vol, chosen_sharpe = ef_strategy.portfolio_performance(risk_free_rate=risk_free_rate,
+                                                                                  verbose=False)
+        port_opt[TARGET_RETURN] = {'ret': float(chosen_ret),
+                                   'vol': float(chosen_vol),
+                                   'sharpe': float(chosen_sharpe),
+                                   'weights': cleaned_weights}
+    except ValueError as e:
+        print(str(e))
 
     if target_volatility is None:
         target_volatility = 0.1

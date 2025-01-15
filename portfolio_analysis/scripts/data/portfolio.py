@@ -38,7 +38,6 @@ class Portfolio:
             txn = Transaction(
                 operation=row["Operation"],
                 date_=row["Date"],
-                valuta=row["Valuta"],
                 ticker_symbol=row["Ticker"],
                 quantity=row["Quantity"]
             )
@@ -108,6 +107,10 @@ class Portfolio:
             tx_index = 0
 
             # For each date in this ticker's price data
+            # Before the date loop for each ticker, initialize FIFO lots:
+            lots = []
+
+            # For each date in this ticker's price data
             for dt in df_prices.index:
                 # Process all transactions up to (and including) this date
                 while tx_index < len(ticker_txns) and ticker_txns[tx_index].date <= dt:
@@ -117,17 +120,34 @@ class Portfolio:
                     if txn.operation == "buy":
                         quantity_held += txn.quantity
                         total_cost += txn.quantity * price_at_tx
+                        lots.append((txn.quantity, price_at_tx))  # Track the purchase in FIFO lots
+
                     elif txn.operation == "sell":
-                        if quantity_held > 0:
-                            avg_cost = total_cost / quantity_held
-                            # Realized gain for the sold quantity
-                            realized_gains += txn.quantity * (price_at_tx - avg_cost)
-                            quantity_held -= txn.quantity
-                            total_cost -= txn.quantity * avg_cost
+                        sell_qty = txn.quantity
+
+                        # Process sale using FIFO logic
+                        while sell_qty > 0 and lots:
+                            lot_qty, lot_price = lots[0]
+                            if lot_qty <= sell_qty:
+                                # Sell the entire lot
+                                realized_gains += lot_qty * (price_at_tx - lot_price)
+                                sell_qty -= lot_qty
+                                quantity_held -= lot_qty
+                                total_cost -= lot_qty * lot_price
+                                lots.pop(0)  # Remove the exhausted lot
+                            else:
+                                # Sell a portion of the current lot
+                                realized_gains += sell_qty * (price_at_tx - lot_price)
+                                lots[0] = (lot_qty - sell_qty, lot_price)  # Reduce quantity in current lot
+                                quantity_held -= sell_qty
+                                total_cost -= sell_qty * lot_price
+                                sell_qty = 0
+
+                        # If sell_qty remains > 0 but no lots are left, consider how to handle overselling (out of scope for this snippet)
 
                     tx_index += 1
 
-                # Update the columns for today's row
+                # Update current day's portfolio values based on new quantity, cost, etc.
                 df_prices.loc[dt, "Quantity Held"] = quantity_held
                 df_prices.loc[dt, "Cost Basis"] = total_cost
                 df_prices.loc[dt, "Realized Gains"] = realized_gains
@@ -136,7 +156,6 @@ class Portfolio:
                     mv = quantity_held * df_prices.loc[dt, "Close"]
                     df_prices.loc[dt, "Market Value"] = mv
                     df_prices.loc[dt, "Unrealized Gains"] = mv - total_cost
-                    # Basic performance as (MV - cost) / cost
                     if total_cost > 0:
                         df_prices.loc[dt, "Performance (%)"] = 100 * (mv - total_cost) / total_cost
 
@@ -153,6 +172,7 @@ class Portfolio:
         )
 
         prev_total_value = 0.0
+        prev_net_value = 0.0
         for dt in all_dates:
             total_value = 0.0
             cost_basis = 0.0
@@ -172,15 +192,19 @@ class Portfolio:
             portfolio.loc[dt, "Cost Basis"] = cost_basis
             portfolio.loc[dt, "Unrealized Gains"] = unreal_gains_sum
             portfolio.loc[dt, "Realized Gains"] = realized_gains_sum
+            portfolio.loc[dt, "Net Gains"] = realized_gains_sum + unreal_gains_sum
 
             # Daily performance % (compared to previous day)
-            if prev_total_value != 0:
-                daily_perf = ((total_value - prev_total_value) / prev_total_value) * 100
+            # if prev_total_value != 0:
+            #     daily_perf = ((total_value - prev_total_value) / prev_total_value) * 100
+            if prev_net_value != 0:
+                daily_perf = 100*((unreal_gains_sum + realized_gains_sum) - prev_net_value) / prev_net_value
             else:
                 daily_perf = 0.0
             portfolio.loc[dt, "Daily Performance (%)"] = daily_perf
 
             prev_total_value = total_value
+            prev_net_value = unreal_gains_sum + realized_gains_sum
 
         # Clean up index
         portfolio.reset_index(inplace=True)
@@ -191,7 +215,7 @@ class Portfolio:
 
         # Perform the calculation, ensuring the column and operations align with float64
         portfolio.loc[portfolio["Cost Basis"] > 0, "Performance (%)"] = (
-                portfolio.loc[portfolio["Cost Basis"] > 0, "Unrealized Gains"] /
+                portfolio.loc[portfolio["Cost Basis"] > 0, "Net Gains"] /
                 portfolio.loc[portfolio["Cost Basis"] > 0, "Cost Basis"] * 100
         )
 

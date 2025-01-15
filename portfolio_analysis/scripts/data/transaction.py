@@ -8,7 +8,6 @@ class Transaction:
     def __init__(self,
                  operation: str,  # "Buy" or "Sell"
                  date_: pd.Timestamp,
-                 valuta: pd.Timestamp,
                  ticker_symbol: str,
                  quantity: float):
         self.operation = operation.lower()  # e.g. "buy" or "sell"
