@@ -24,7 +24,7 @@ COLUMN_CONFIG = {
             options=["Buy", "Sell"],  # Restrict options to Buy or Sell
             help="Choose whether the transaction is a Buy or Sell"
         ),
-        "Date": st.column_config.DateColumn("Transaction Date", format="DD/MM/YYYY"),
+        "Date": st.column_config.DateColumn("Transaction Date", format="DD/MM/YY"),
         "Name": st.column_config.TextColumn("Name"),
         "Ticker": st.column_config.TextColumn("Ticker"),
         "Quantity": st.column_config.NumberColumn("Quantity", step=1),
@@ -575,7 +575,7 @@ def upload_data():
     # Example dataframe structure
     example_data = pd.DataFrame({
         "Operation": ["Buy", "Sell"],
-        "Date": ["01/01/2024", "15/02/2024"],
+        "Date": ["01/01/24", "15/02/24"],
         "Name": ['Apple', 'Google'],
         "Ticker": ["AAPL", "GOOGL"],
         "Quantity": [10, 5]
@@ -603,7 +603,7 @@ def upload_data():
     )
     blank_data = pd.DataFrame({
         "Operation": ["Buy"],
-        "Date": [pd.to_datetime("01/01/2025")],
+        "Date": [pd.to_datetime("01/01/25")],
         "Ticker": ["Yahoo Ticker"],
         "Quantity": [1]
     })
