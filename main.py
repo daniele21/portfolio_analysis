@@ -525,13 +525,15 @@ def timeframe_input(min_date, max_date, container=None):
                     return pd.to_datetime(min_date).date(), pd.to_datetime(max_date).date()
 
 
-def download_transactions(transactions_df):
+def download_transactions(transactions_df,
+                          label="Download 📈",
+                          filename=None):
     csv = transactions_df.to_csv(index=False).encode("utf-8")
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     st.download_button(
-        label="Download 📈",
+        label=label,
         data=csv,
-        file_name=f"transactions_{timestamp}.csv",
+        file_name=f"transactions_{timestamp}.csv" if filename is None else filename,
         mime="text/csv"
     )
 
@@ -551,7 +553,11 @@ def upload_data():
         "Ticker": ["AAPL", "GOOGL"],
         "Quantity": [10, 5]
     })
+
     st.dataframe(example_data, use_container_width=True)
+    download_transactions(example_data,
+                          label='Template 📃',
+                          filename='template_transactions.csv')
     st.markdown("*For better know the ticker, search it from [Yahoo Finance](https://www.finance.yahoo.com)*")
 
     st.divider()
