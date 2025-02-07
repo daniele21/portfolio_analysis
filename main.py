@@ -573,6 +573,12 @@ def upload_data():
         st.rerun()
 
 
+def switch_tab(tab_name):
+    if st.session_state["current_tab"] != tab_name:
+        st.session_state["current_tab"] = tab_name
+        st.rerun()
+
+
 if __name__ == '__main__':
 
     st.set_page_config(
@@ -583,13 +589,11 @@ if __name__ == '__main__':
     st.session_state['loading_data'] = False
     st.markdown("""
             <div style="text-align: center;">
-                <h1>Portfolio Analysis Tool</h1>
-                <h3>My financials in one place</h3>
+                <h1>💸 My Financial Vision 💸</h1>
+                <h3>My financials in one place 🔒</h3>
                 <hr style="border: 1px solid blue;">
             </div>
         """, unsafe_allow_html=True)
-    load_button = st.button("📄 Load Transactions", on_click=upload_data)
-
     uploaded_file = None
     transactions = None
     allocation_df, portfolio_kpis, portfolio_df, my_portfolio = None, None, None, None
@@ -609,7 +613,16 @@ if __name__ == '__main__':
         uploaded_file = st.session_state.get("uploaded_file")
         transactions = st.session_state.get("transactions")
 
-    home_tab, perf_tab, optimization_tab, transaction_tab = st.tabs(TABS)
+    # home_tab, perf_tab, optimization_tab, transaction_tab = st.tabs(TABS)
+    selected_tab = st.pills(
+        "Navigate",
+        options=TABS,
+        selection_mode="single",
+        default=TRANSACTIONS
+    )
+
+    if st.session_state.get("current_tab") is None:
+        st.session_state["current_tab"] = HOME
 
     if transactions is not None and uploaded_file is not None:
         # st.info('Loading Data...')
@@ -626,7 +639,9 @@ if __name__ == '__main__':
         portfolio_kpis = calculate_kpis(my_portfolio, portfolio_df, allocation_df, all_tickers_perf)
         st.session_state['portfolio'] = my_portfolio
 
-    with home_tab:
+
+    if selected_tab == HOME:
+        switch_tab(HOME)
         if my_portfolio is not None and \
                 allocation_df is not None and \
                 portfolio_kpis is not None and \
@@ -635,11 +650,14 @@ if __name__ == '__main__':
         else:
             st.warning("No transactions uploaded. Please upload a CSV file")
 
-    with perf_tab:
+
+    if selected_tab == PERFORMANCE:
+        switch_tab(PERFORMANCE)
         render_performance_tab()
 
     # Allocation Tab
-    with optimization_tab:
+    if selected_tab == OPTIMIZATION:
+        switch_tab(OPTIMIZATION)
 
         if my_portfolio is not None and \
                 allocation_df is not None and \
@@ -725,11 +743,12 @@ if __name__ == '__main__':
                 # st.text('Green coloured values -> ')
 
     # Transactions Tab
-    with transaction_tab:
-        st.header("Uploaded Transactions")
+    if selected_tab == TRANSACTIONS:
+        switch_tab(TRANSACTIONS)
+        st.header("Current Transactions")
+        st.markdown("You can **Add** | **Edit** | **Remove** the transactions:")
         if transactions is not None:
-            st.dataframe(transactions, use_container_width=True)
-            st.data_editor(transactions)
+            st.data_editor(transactions, use_container_width=True, num_rows='dynamic')
         else:
             st.warning("No transactions uploaded. Please upload a CSV file in the Home tab.")
 
