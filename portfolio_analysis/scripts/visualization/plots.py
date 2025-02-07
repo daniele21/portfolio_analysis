@@ -449,31 +449,45 @@ def plot_unrealized_gains(ticker, ticker_performance_df, transactions):
 
 def create_pie_chart(allocation_df):
     """
-    Plot the current portfolio allocation (by Ticker).
-    Assumes allocation_df has columns ['Ticker', 'Market Value'].
+    Plot the current portfolio allocation (by Title).
+    Assumes allocation_df has columns ['Title', 'MarketValue'].
     """
-    fig = px.pie(allocation_df, names='Ticker', values='MarketValue')
-    fig.update_traces(textposition='inside',
-                      textinfo='percent+label',
-                      insidetextfont=dict(size=14, color='white'),  # Increase font size and ensure good contrast
-                      outsidetextfont=dict(size=12, color='black')
-                      )
+    # Sort the data for better visualization (largest to smallest slice)
+    allocation_df = allocation_df.sort_values(by="MarketValue", ascending=False)
+
+    fig = px.pie(allocation_df, names='Title', values='MarketValue',
+                 )
+
+    fig.update_traces(
+        textposition='inside',
+        textinfo='percent+label',
+        insidetextfont=dict(size=14, color='white'),
+        outsidetextfont=dict(size=12, color='black'),
+        marker=dict(line=dict(color='white', width=2)),  # Add white border around slices
+    )
+
     fig.update_layout(
         template='plotly_white',
-        autosize=True,  # Automatically size the chart
-        margin=dict(l=20, r=20, t=30, b=20),  # Adjust margins for better fit
-        width=None,  # Let width adjust dynamically
-        height=None,  # Let height adjust dynamically
+        autosize=True,
+        margin=dict(l=40, r=40, t=60, b=20),  # Adjust margins for better spacing
+        width=600,  # Set chart width
+        height=700,  # Set chart height
+        # title=dict(
+        #     # text="Portfolio Allocation by Asset",
+        #     font=dict(size=20),  # Larger and bold title
+        #     x=0.5,  # Center the title
+        # ),
         legend=dict(
-            font=dict(size=14),  # Make legend text larger
-            title=dict(font=dict(size=16)),  # Make legend title larger
-            orientation="h",  # Horizontal legend for better layout (optional)
-            yanchor="top",  # Position legend at the top
-            y=1.1,  # Adjust vertical position
-            xanchor="center",  # Center legend horizontally
+            font=dict(size=14),
+            title=dict(text="Assets", font=dict(size=16)),  # Legend title for context
+            orientation="h",  # Horizontal legend
+            yanchor="top",  # Anchor legend at the bottom
+            y=0,  # Position below the chart
+            xanchor="center",  # Center the legend horizontally
             x=0.5,  # Adjust horizontal position
         )
     )
+
     return fig
 
 
@@ -984,31 +998,45 @@ def plot_top_holdings_concentration(allocation_df, top_n=5):
 
 def plot_asset_allocation_by_type(allocation_df, type_col='AssetType'):
     """
-    Create a pie chart of asset allocation by the specified 'type_col' (e.g. AssetType, Sector, etc.).
-    Expects allocation_df to have columns [type_col, 'Market Value'].
+    Create a pie chart of asset allocation by the specified 'type_col' (e.g., AssetType, Sector, etc.).
+    Expects allocation_df to have columns [type_col, 'MarketValue'].
     """
     # Summarize by asset type
     df_type = allocation_df.groupby(type_col)['MarketValue'].sum().reset_index()
-    fig = px.pie(df_type, names=type_col, values='MarketValue')
-    fig.update_traces(textposition='inside',
-                      textinfo='percent+label',
-                      insidetextfont=dict(size=14, color='white'),  # Increase font size and ensure good contrast
-                      outsidetextfont=dict(size=12, color='black')
-                      )
+
+    # Create pie chart
+    fig = px.pie(df_type, names=type_col, values='MarketValue',
+                 )
+
+    fig.update_traces(
+        textposition='inside',
+        textinfo='percent+label',
+        insidetextfont=dict(size=14, color='white'),  # Increase font size and ensure good contrast
+        outsidetextfont=dict(size=12, color='black'),
+        marker=dict(line=dict(color='white', width=2))  # Add white border around slices
+    )
+
     fig.update_layout(
         template='plotly_white',
-        autosize=True,  # Automatically size the chart
-        margin=dict(l=20, r=20, t=30, b=20),  # Adjust margins for better fit
-        width=None,  # Let width adjust dynamically
-        height=None,  # Let height adjust dynamically
+        autosize=True,
+        margin=dict(l=40, r=40, t=60, b=80),  # Adjust margins for better layout
+        width=600,  # Set fixed width
+        height=600,  # Set fixed height
+        # title=dict(
+        #     text=f"Asset Allocation by {type_col}",
+        #     font=dict(size=20),  # Larger and bold title
+        #     x=0.5,  # Center the title
+        # ),
         legend=dict(
-            font=dict(size=14),  # Make legend text larger
-            title=dict(font=dict(size=16)),  # Make legend title larger
-            orientation="h",  # Horizontal legend for better layout (optional)
-            yanchor="top",  # Position legend at the top
-            y=1.1,  # Adjust vertical position
-            xanchor="center",  # Center legend horizontally
+            font=dict(size=14),
+            title=dict(text=f"{type_col}s", font=dict(size=16)),  # Legend title for better context
+            orientation="h",  # Horizontal legend
+            yanchor="top",  # Anchor legend at the bottom
+            y=0,  # Position legend below the chart
+            xanchor="center",  # Center the legend horizontally
             x=0.5,  # Adjust horizontal position
         )
     )
+
     return fig
+
