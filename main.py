@@ -18,6 +18,16 @@ TRANSACTIONS = 'Transactions'
 
 TABS = [HOME, PERFORMANCE, OPTIMIZATION, TRANSACTIONS]
 
+
+def spinner_decorator(func):
+    def wrapper(*args, **kwargs):
+        with st.spinner("Loading..."):
+            result = func(*args, **kwargs)  # Run the wrapped function
+        return result
+
+    return wrapper
+
+
 @st.cache_data
 def read_data(tickers, start_date, end_date, transactions):
     ticker_collection = TickerCollection(tickers, start_date, end_date)
@@ -281,7 +291,6 @@ def _home_kpis_ticker(portfolio_kpis):
             )
 
 
-
 def _kpis(portfolio_kpis):
     cols = st.columns([1, 1, 1])
     with cols[0]:
@@ -311,6 +320,7 @@ def _general_performance(portfolio_df):
     st.plotly_chart(annotated_line_chart, key='one')
 
 
+@spinner_decorator
 def render_home_tab(allocation_df, portfolio_kpis, portfolio_df):
     transactions = st.session_state.get("transactions")
     if transactions is not None:
@@ -438,6 +448,7 @@ def _asset_performance(portfolio_kpis, cur_vol, data_dict, portfolio_df, selecte
         #     st.metric("Performance", f"{worst_ticker['performance']:.2f} %")
 
 
+
 def render_performance_tab():
     transactions = st.session_state.get("transactions")
     min_date = st.session_state.get('start_date')
@@ -515,11 +526,10 @@ def timeframe_input(min_date, max_date, container=None):
 
 
 def download_transactions(transactions_df):
-    st.markdown("Please remember to download the transactions otherwise you will lose you it!")
     csv = transactions_df.to_csv(index=False).encode("utf-8")
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     st.download_button(
-        label="Download Transactions as CSV",
+        label="Download 📈",
         data=csv,
         file_name=f"transactions_{timestamp}.csv",
         mime="text/csv"
@@ -563,6 +573,7 @@ def upload_data():
         "Quantity": ['N']
     })
     transactions_df = st.data_editor(blank_data, num_rows="dynamic", use_container_width=True)
+    st.markdown("Please remember to download the transactions otherwise you will lose you it!")
     download_transactions(transactions_df)
 
     if uploaded_file:
@@ -579,6 +590,113 @@ def switch_tab(tab_name):
         st.rerun()
 
 
+def render_optimization_tab(my_portfolio, allocation_df, portfolio_kpis, portfolio_df):
+    if my_portfolio is not None and \
+            allocation_df is not None and \
+            portfolio_kpis is not None and \
+            portfolio_df is not None:
+        st.header("Portfolio Optimization")
+
+        target_return = None
+        target_volatility = None
+        risk_free_rate = 0.02
+        curr_weights, cur_ret, cur_vol = my_portfolio.current_weights()
+        curr_weights_sorted = curr_weights['Allocation(%)'].sort_values(ascending=False) \
+            .to_frame() \
+            .T \
+            .round(0)
+        _, mean_returns, cov_matrix = my_portfolio.get_returns_matrix()
+        df_random, frontiers, port_opt = optimize(mean_returns,
+                                                  cov_matrix,
+                                                  risk_free_rate=risk_free_rate,
+                                                  target_return=target_return,
+                                                  target_volatility=target_volatility
+                                                  )
+
+        cols = st.columns([1, 0.2, 1])
+        with cols[0]:
+            st.write('**Current Portfolio Allocation**')
+            st.dataframe(curr_weights_sorted, use_container_width=True)
+
+            fig = plot_optimization(df_random, frontiers, port_opt, (cur_ret, cur_vol))
+            st.plotly_chart(fig, use_container_width=True)
+        with cols[2]:
+            pills = st.pills("Choose your Strategy", options=STRATEGIES, default=STRATEGIES[0])
+            target_disabled = pills != TARGET_RETURN
+            risk_disabled = pills != SAME_RISK
+
+            input_cols = st.columns(2)
+            with input_cols[0]:
+                user_input_tr = st.number_input("Desired Annual Return (%)",
+                                                value=5.0,
+                                                step=1.0,
+                                                disabled=target_disabled)
+                target_return = user_input_tr / 100.0
+            with input_cols[1]:
+                user_input_tv = st.number_input("Desired Volatility (%)",
+                                                value=15.0,
+                                                step=1.0,
+                                                disabled=risk_disabled)
+                target_volatility = user_input_tv / 100.0
+
+            df_random, frontiers, port_opt = optimize(mean_returns,
+                                                      cov_matrix,
+                                                      risk_free_rate=risk_free_rate,
+                                                      target_return=target_return,
+                                                      target_volatility=target_volatility
+                                                      )
+            st.divider()
+            space = st.columns(3)
+            space[0].metric(label='Expected Annual Return',
+                            value=f"{port_opt[pills]['ret'] * 100:.2f} %")
+            space[1].metric(label='Annual Volatility',
+                            value=f"{port_opt[pills]['vol'] * 100:.2f} %")
+            space[2].metric(label='Sharpe Ratio',
+                            value=f"{port_opt[pills]['sharpe']:.2f}")
+            st.divider()
+        with cols[2]:
+            st.write(f'**New Allocation** following **{pills} strategy**')
+            opt_weights = pd.DataFrame(port_opt[pills]['weights'], index=['%'])
+            opt_allocation = (opt_weights * 100).round(0)
+            st.dataframe(opt_allocation, use_container_width=True)
+            st.divider()
+
+            st.write(f'**Allocation Difference from Current Portfolio**')
+            diff_curr_weights = curr_weights.rename(columns={'Allocation(%)': '%'})['%'].sort_index() / 100
+            # st.dataframe(diff_curr_weights.to_frame().T, use_container_width=True)
+            diff_opt_weights = opt_weights.T.sort_index()
+            # st.dataframe(diff_opt_weights.T, use_container_width=True)
+            diff_weights = ((diff_opt_weights.T - diff_curr_weights.T) * 100)
+            diff_weights = diff_weights.style.applymap(colorize) \
+                .format("{:.0f}") \
+                .set_properties(**{'font-size': '24pt'})
+
+            st.dataframe(diff_weights, use_container_width=True)
+            # st.text('Green coloured values -> ')
+
+def render_transaction_tab():
+    def change_transactions():
+        st.session_state['transactions'] = st.session_state['edited_transactions']
+
+
+    transactions = st.session_state.get('transactions')
+    st.header("Current Transactions")
+    if st.button("📄 Load Transactions"):
+        st.session_state["show_upload_dialog"] = True
+        st.rerun()
+    st.markdown("You can **Add** | **Edit** | **Remove** the transactions:")
+    if transactions is not None:
+        st.session_state["edited_transactions"] = transactions.copy()
+        edited_transactions = st.data_editor(st.session_state["edited_transactions"],
+                                             use_container_width=True,
+                                             num_rows='dynamic')
+        st.session_state["edited_transactions"] = edited_transactions
+        st.button('Submit changes', on_click=change_transactions)
+        download_transactions(edited_transactions)
+    else:
+        st.warning("No transactions uploaded. Please upload a CSV file in the Home tab.")
+
+
 if __name__ == '__main__':
 
     st.set_page_config(
@@ -590,7 +708,7 @@ if __name__ == '__main__':
     st.markdown("""
             <div style="text-align: center;">
                 <h1>💸 My Financial Vision 💸</h1>
-                <h3>My financials in one place 🔒</h3>
+                <h3>Track you movements in one place 🔒</h3>
                 <hr style="border: 1px solid blue;">
             </div>
         """, unsafe_allow_html=True)
@@ -604,10 +722,6 @@ if __name__ == '__main__':
     # Open dialog only if the flag is set
     if st.session_state["show_upload_dialog"]:
         upload_data()
-
-    if st.button("📄 Load Transactions"):
-        st.session_state["show_upload_dialog"] = True
-        st.rerun()
 
     else:
         uploaded_file = st.session_state.get("uploaded_file")
@@ -639,7 +753,6 @@ if __name__ == '__main__':
         portfolio_kpis = calculate_kpis(my_portfolio, portfolio_df, allocation_df, all_tickers_perf)
         st.session_state['portfolio'] = my_portfolio
 
-
     if selected_tab == HOME:
         switch_tab(HOME)
         if my_portfolio is not None and \
@@ -650,7 +763,6 @@ if __name__ == '__main__':
         else:
             st.warning("No transactions uploaded. Please upload a CSV file")
 
-
     if selected_tab == PERFORMANCE:
         switch_tab(PERFORMANCE)
         render_performance_tab()
@@ -658,99 +770,12 @@ if __name__ == '__main__':
     # Allocation Tab
     if selected_tab == OPTIMIZATION:
         switch_tab(OPTIMIZATION)
-
-        if my_portfolio is not None and \
-                allocation_df is not None and \
-                portfolio_kpis is not None and \
-                portfolio_df is not None:
-            st.header("Portfolio Optimization")
-
-            target_return = None
-            target_volatility = None
-            risk_free_rate = 0.02
-            curr_weights, cur_ret, cur_vol = my_portfolio.current_weights()
-            curr_weights_sorted = curr_weights['Allocation(%)'].sort_values(ascending=False) \
-                .to_frame() \
-                .T \
-                .round(0)
-            _, mean_returns, cov_matrix = my_portfolio.get_returns_matrix()
-            df_random, frontiers, port_opt = optimize(mean_returns,
-                                                      cov_matrix,
-                                                      risk_free_rate=risk_free_rate,
-                                                      target_return=target_return,
-                                                      target_volatility=target_volatility
-                                                      )
-
-            cols = st.columns([1, 0.2, 1])
-            with cols[0]:
-                st.write('**Current Portfolio Allocation**')
-                st.dataframe(curr_weights_sorted, use_container_width=True)
-
-                fig = plot_optimization(df_random, frontiers, port_opt, (cur_ret, cur_vol))
-                st.plotly_chart(fig, use_container_width=True)
-            with cols[2]:
-                pills = st.pills("Choose your Strategy", options=STRATEGIES, default=STRATEGIES[0])
-                target_disabled = pills != TARGET_RETURN
-                risk_disabled = pills != SAME_RISK
-
-                input_cols = st.columns(2)
-                with input_cols[0]:
-                    user_input_tr = st.number_input("Desired Annual Return (%)",
-                                                    value=5.0,
-                                                    step=1.0,
-                                                    disabled=target_disabled)
-                    target_return = user_input_tr / 100.0
-                with input_cols[1]:
-                    user_input_tv = st.number_input("Desired Volatility (%)",
-                                                    value=15.0,
-                                                    step=1.0,
-                                                    disabled=risk_disabled)
-                    target_volatility = user_input_tv / 100.0
-
-                df_random, frontiers, port_opt = optimize(mean_returns,
-                                                          cov_matrix,
-                                                          risk_free_rate=risk_free_rate,
-                                                          target_return=target_return,
-                                                          target_volatility=target_volatility
-                                                          )
-                st.divider()
-                space = st.columns(3)
-                space[0].metric(label='Expected Annual Return',
-                                value=f"{port_opt[pills]['ret'] * 100:.2f} %")
-                space[1].metric(label='Annual Volatility',
-                                value=f"{port_opt[pills]['vol'] * 100:.2f} %")
-                space[2].metric(label='Sharpe Ratio',
-                                value=f"{port_opt[pills]['sharpe']:.2f}")
-                st.divider()
-            with cols[2]:
-                st.write(f'**New Allocation** following **{pills} strategy**')
-                opt_weights = pd.DataFrame(port_opt[pills]['weights'], index=['%'])
-                opt_allocation = (opt_weights * 100).round(0)
-                st.dataframe(opt_allocation, use_container_width=True)
-                st.divider()
-
-                st.write(f'**Allocation Difference from Current Portfolio**')
-                diff_curr_weights = curr_weights.rename(columns={'Allocation(%)': '%'})['%'].sort_index() / 100
-                # st.dataframe(diff_curr_weights.to_frame().T, use_container_width=True)
-                diff_opt_weights = opt_weights.T.sort_index()
-                # st.dataframe(diff_opt_weights.T, use_container_width=True)
-                diff_weights = ((diff_opt_weights.T - diff_curr_weights.T) * 100)
-                diff_weights = diff_weights.style.applymap(colorize) \
-                    .format("{:.0f}") \
-                    .set_properties(**{'font-size': '24pt'})
-
-                st.dataframe(diff_weights, use_container_width=True)
-                # st.text('Green coloured values -> ')
+        render_optimization_tab(my_portfolio, allocation_df, portfolio_kpis, portfolio_df)
 
     # Transactions Tab
     if selected_tab == TRANSACTIONS:
         switch_tab(TRANSACTIONS)
-        st.header("Current Transactions")
-        st.markdown("You can **Add** | **Edit** | **Remove** the transactions:")
-        if transactions is not None:
-            st.data_editor(transactions, use_container_width=True, num_rows='dynamic')
-        else:
-            st.warning("No transactions uploaded. Please upload a CSV file in the Home tab.")
+        render_transaction_tab()
 
     # Footer
     st.markdown("""
