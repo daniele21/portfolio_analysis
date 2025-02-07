@@ -19,14 +19,6 @@ TRANSACTIONS = 'Transactions'
 TABS = [HOME, PERFORMANCE, OPTIMIZATION, TRANSACTIONS]
 
 
-def spinner_decorator(func):
-    def wrapper(*args, **kwargs):
-        with st.spinner("Loading..."):
-            result = func(*args, **kwargs)  # Run the wrapped function
-        return result
-
-    return wrapper
-
 
 @st.cache_data
 def read_data(tickers, start_date, end_date, transactions):
@@ -163,9 +155,24 @@ def compute_performance_by_date(portfolio, benchmark_collection, start_date, end
 
 @st.cache_data
 def read_transactions(uploaded_file):
+    def detect_separator(file):
+        """Detect the most common separator in the first line of the file."""
+        first_line = file.readline().decode("utf-8")  # Read first line
+        file.seek(0)  # Reset file pointer
+        return "," if first_line.count(",") > first_line.count(";") else ";"
+
     print('> Reading Transaction')
-    date_parser = lambda x: datetime.strptime(x, "%d/%m/%Y")
-    transactions = pd.read_csv(uploaded_file, parse_dates=['Date'], date_parser=date_parser)
+    sep = detect_separator(uploaded_file)
+    try:
+        transactions = pd.read_csv(uploaded_file,
+                                   parse_dates=['Date'],
+                                   date_parser=lambda x: datetime.strptime(x, "%d/%m/%Y"),
+                                   sep=sep)
+    except Exception as e:
+        transactions = pd.read_csv(uploaded_file,
+                                   parse_dates=['Date'],
+                                   date_parser=lambda x: datetime.strptime(x, "%d/%m/%y"),
+                                   sep=sep)
     return transactions
 
 
@@ -320,7 +327,6 @@ def _general_performance(portfolio_df):
     st.plotly_chart(annotated_line_chart, key='one')
 
 
-@spinner_decorator
 def render_home_tab(allocation_df, portfolio_kpis, portfolio_df):
     transactions = st.session_state.get("transactions")
     if transactions is not None:
@@ -550,6 +556,7 @@ def upload_data():
     example_data = pd.DataFrame({
         "Operation": ["Buy", "Sell"],
         "Date": ["01/01/2024", "15/02/2024"],
+        "Name": ['Apple', 'Google'],
         "Ticker": ["AAPL", "GOOGL"],
         "Quantity": [10, 5]
     })
