@@ -1,10 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from datetime import date, timedelta
-import plotly.express as px
-
-from pypfopt.efficient_frontier import EfficientFrontier
+from datetime import date
 
 from portfolio_analysis.scripts.data.optimization import STRATEGIES, optimize_and_plot, optimize, TARGET_RETURN, \
     SAME_RISK
@@ -205,6 +202,7 @@ def _home_allocation(allocation_df):
         pie_chart = plot_asset_allocation_by_type(allocation_df)
         st.plotly_chart(pie_chart, use_container_width=True)
 
+
 def _home_kpis_returns(portfolio_kpis):
     with st.container():
         with st.expander('Portfolio Returns'):
@@ -235,7 +233,6 @@ def _home_kpis_returns(portfolio_kpis):
                 unsafe_allow_html=True
             )
 
-
             col3.write("**Monthly Returns**")
             col3_text = f"€ {portfolio_kpis['returns']['monthly']['abs']:.2f}"
             col3.markdown(
@@ -261,6 +258,7 @@ def _home_kpis_returns(portfolio_kpis):
             #             f"€ {portfolio_kpis['returns']['monthly']['abs']:.2f}",
             #             delta=f"{portfolio_kpis['returns']['monthly']['pct']:.2f} %",
             #             border=False)
+
 
 def _home_kpis_ticker(portfolio_kpis):
     with st.container():
@@ -351,6 +349,7 @@ def _home_kpis_ticker(portfolio_kpis):
             #     st.metric("Performance", f"{best_ticker['performance']:.2f} %")
             #     st.metric("Performance", f"{worst_ticker['performance']:.2f} %")
 
+
 def _kpis(portfolio_kpis):
     cols = st.columns([1, 1, 1])
     with cols[0]:
@@ -365,6 +364,7 @@ def _kpis(portfolio_kpis):
 
     st.divider()
 
+
 @st.cache_data
 def _general_performance(portfolio_df):
     annotated_line_chart = plot_performance(
@@ -376,7 +376,7 @@ def _general_performance(portfolio_df):
         portfolio_label="My Portfolio",
         item_labels=None,
     )
-    st.plotly_chart(annotated_line_chart,key='one')
+    st.plotly_chart(annotated_line_chart, key='one')
 
 
 def render_home_tab(allocation_df, portfolio_kpis, portfolio_df):
@@ -440,7 +440,6 @@ def _portfolio_performance(portfolio_kpis, cur_vol, data_dict, portfolio_df, sel
 
 
 def _asset_performance(portfolio_kpis, cur_vol, data_dict, portfolio_df, selected_benchmark_ticker):
-
     selected_ticker = st.multiselect("Select Ticker:", tickers, default=tickers[0])
     ticker_data_dict = {ticker: all_tickers_perf[ticker] for ticker in selected_ticker}
     titles = [value['title'].iloc[0] for _, value in ticker_data_dict.items()]
@@ -583,40 +582,104 @@ def timeframe_input(min_date, max_date, container=None):
                     return pd.to_datetime(min_date).date(), pd.to_datetime(max_date).date()
 
 
-@st.dialog('Setup Data')
+def download_transactions(transactions_df):
+    st.markdown("Please remember to download the transactions otherwise you will lose you it!")
+    csv = transactions_df.to_csv(index=False).encode("utf-8")
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    st.download_button(
+        label="Download Transactions as CSV",
+        data=csv,
+        file_name=f"transactions_{timestamp}.csv",
+        mime="text/csv"
+    )
+
+
+@st.dialog('Upload/Fill your transactions', width='large')
 def upload_data():
+    st.markdown(
+        "<h2 style='text-align: center;'>Transactions Format</h2>",
+        unsafe_allow_html=True
+    )
+    st.markdown("Make sure your transactions file follows this format:")
+
+    # Example dataframe structure
+    example_data = pd.DataFrame({
+        "Operation": ["Buy", "Sell"],
+        "Date": ["01/01/2024", "15/02/2024"],
+        "Ticker": ["AAPL", "GOOGL"],
+        "Quantity": [10, 5]
+    })
+    st.dataframe(example_data, use_container_width=True)
+    st.markdown("*For better know the ticker, search it from [Yahoo Finance](https://www.finance.yahoo.com)*")
+
+    st.divider()
+    # st.markdown(
+    #     "<h2 style='text-align: center;'>You can Upload or Fill by manually</h2>",
+    #     unsafe_allow_html=True
+    # )
+    #st.divider()
+    st.markdown(
+        "<h3 style='text-align: center;'>Upload</h3>",
+        unsafe_allow_html=True
+    )
     uploaded_file = st.file_uploader("Upload your CSV file with transactions", type="csv")
+
+    st.divider()
+    st.markdown(
+        "<h3 style='text-align: center;'>Fill here</h3>",
+        unsafe_allow_html=True
+    )
+    blank_data = pd.DataFrame({
+        "Operation": ["Buy"],
+        "Date": ["DD/MM/YYYY"],
+        "Ticker": ["XXXX"],
+        "Quantity": ['N']
+    })
+    transactions_df = st.data_editor(blank_data, num_rows="dynamic", use_container_width=True)
+    download_transactions(transactions_df)
+
     if uploaded_file:
         st.session_state["uploaded_file"] = uploaded_file
         transactions = read_transactions(uploaded_file)
         st.session_state["transactions"] = transactions
+        st.session_state["show_upload_dialog"] = False
         st.rerun()
 
 
 if __name__ == '__main__':
 
     st.set_page_config(
-        page_title="Portfolio Analysis Tool",
+        page_title="My Financial Vision",
         layout="wide",
         initial_sidebar_state="auto"
     )
-
+    st.session_state['loading_data'] = False
     st.markdown("""
             <div style="text-align: center;">
                 <h1>Portfolio Analysis Tool</h1>
-                <h3>Get detailed insights into your financial portfolio</h3>
+                <h3>My financials in one place</h3>
                 <hr style="border: 1px solid blue;">
             </div>
         """, unsafe_allow_html=True)
+    # load_button = st.button("📄 Load Transactions", on_click=upload_data)
 
     uploaded_file = None
     transactions = None
     allocation_df, portfolio_kpis, portfolio_df, my_portfolio = None, None, None, None
 
-    if "uploaded_file" not in st.session_state:
+    if "show_upload_dialog" not in st.session_state:
+        st.session_state["show_upload_dialog"] = False
+
+    # Open dialog only if the flag is set
+    if st.session_state["show_upload_dialog"]:
         upload_data()
+
+    if st.button("📄 Load Transactions"):
+        st.session_state["show_upload_dialog"] = True
+        st.rerun()
+
     else:
-        uploaded_file = st.session_state["uploaded_file"]
+        uploaded_file = st.session_state.get("uploaded_file")
         transactions = st.session_state.get("transactions")
 
     home_tab, perf_tab, optimization_tab, optimization_tab_2, transaction_tab = st.tabs(
@@ -791,10 +854,6 @@ if __name__ == '__main__':
                                                       )
             fig = plot_optimization(df_random, frontiers, port_opt, (cur_ret, cur_vol))
             st.plotly_chart(fig, use_container_width=True, key='Test')
-
-
-
-
 
             st.divider()
             space = st.columns(3)
