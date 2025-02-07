@@ -178,11 +178,15 @@ def read_transactions(uploaded_file):
 
 def _home_allocation(allocation_df):
     st.write('**Allocation**')
-    pills = st.pills(label=None, options=['Asset', 'Type'], default='Asset')
+    pills = st.pills(label=None, options=['Ticker', 'Full Name', 'Type'], default='Ticker')
 
-    if pills == 'Asset':
+    if pills == 'Ticker':
         # st.subheader("Allocation by Asset")
-        pie_chart = create_pie_chart(allocation_df)
+        pie_chart = create_pie_chart(allocation_df, x='Ticker')
+        st.plotly_chart(pie_chart, use_container_width=True)
+    if pills == 'Full Name':
+        # st.subheader("Allocation by Asset")
+        pie_chart = create_pie_chart(allocation_df, x='Title')
         st.plotly_chart(pie_chart, use_container_width=True)
     elif pills == 'Type':
         # st.subheader("Allocation by Asset")
@@ -252,7 +256,6 @@ def _home_kpis_ticker(portfolio_kpis):
         with st.expander('Best/Worst Assets'):
             best_ticker = portfolio_kpis["best_ticker"]
             worst_ticker = portfolio_kpis["worst_ticker"]
-
             col1, col2, col3 = st.columns(3)
 
             col1.write("**Best Performing Ticker**")
@@ -764,6 +767,7 @@ if __name__ == '__main__':
                                                                                             end_date,
                                                                                             transactions)
         portfolio_kpis = calculate_kpis(my_portfolio, portfolio_df, allocation_df, all_tickers_perf)
+        # st.write(all_tickers_perf)
         st.session_state['portfolio'] = my_portfolio
 
     if selected_tab == HOME:

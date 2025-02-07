@@ -447,7 +447,7 @@ def plot_unrealized_gains(ticker, ticker_performance_df, transactions):
     return fig
 
 
-def create_pie_chart(allocation_df):
+def create_pie_chart(allocation_df, x):
     """
     Plot the current portfolio allocation (by Title).
     Assumes allocation_df has columns ['Title', 'MarketValue'].
@@ -455,7 +455,7 @@ def create_pie_chart(allocation_df):
     # Sort the data for better visualization (largest to smallest slice)
     allocation_df = allocation_df.sort_values(by="MarketValue", ascending=False)
 
-    fig = px.pie(allocation_df, names='Title', values='MarketValue',
+    fig = px.pie(allocation_df, names=x, values='MarketValue',
                  )
 
     fig.update_traces(
