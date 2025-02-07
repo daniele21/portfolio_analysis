@@ -11,6 +11,12 @@ from portfolio_analysis.scripts.utils.utils import colorize
 from portfolio_analysis.scripts.visualization.plots import plot_performance_with_annotations, plot_performance, \
     create_pie_chart, plot_asset_allocation_by_type, plot_bar_realized_vs_unrealized, plot_optimization
 
+HOME = 'Home'
+PERFORMANCE = 'Performance'
+OPTIMIZATION = 'Optimization'
+TRANSACTIONS = 'Transactions'
+
+TABS = [HOME, PERFORMANCE, OPTIMIZATION, TRANSACTIONS]
 
 @st.cache_data
 def read_data(tickers, start_date, end_date, transactions):
@@ -104,42 +110,6 @@ def loading_portfolio_data(transactions):
     benchmark_collection = BenchmarkCollection(benchmarks_tickers, start_date, end_date)
 
     return my_portfolio, benchmark_collection
-
-    # Calculate portfolio-level performance
-    # Suppose after computing portfolio performance:
-
-    # portfolio_df, all_tickers_perf = my_portfolio.calculate_portfolio_performance()
-    #
-    # # Also create an allocation DataFrame (final day or group by Ticker):
-    # allocation_df = pd.DataFrame()
-    # for sym, df_ in all_tickers_perf.items():
-    #     if not df_.empty:
-    #         last_row = df_.iloc[-1:].copy()
-    #         allocation_df = pd.concat((allocation_df, last_row), ignore_index=True)
-    #
-    # # e.g. keep only relevant columns
-    # allocation_df = allocation_df[
-    #     ['Ticker', 'Market Value', 'Unrealized Gains', 'Realized Gains', 'AssetType', 'Sector', 'Industry']]
-    # allocation_df.fillna(0, inplace=True)
-    #
-    # # Now create the plots:
-    #
-    # # fig_value = plot_portfolio_value_over_time(portfolio_df)
-    # # fig_value.show()
-    #
-    # benchmarks_tickers = ["^GSPC", "^IXIC", 'URTH', '^RUT', '^DJI', '^FTSE']
-    # benchmark_collection = BenchmarkCollection(benchmarks_tickers, start_date, end_date)
-    #
-    # # Fetch price data and compute cumulative returns
-    # benchmark_collection.fetch_fundamental_data()
-    # benchmark_collection.fetch_price_data()
-    # benchmark_cumulative_returns = benchmark_collection.compute_all_ticker_performances()
-    # benchmarks_labels = [df['title'].iloc[0] for ticker, df in benchmark_cumulative_returns.items()]
-    # benchmarks = {title: benchmark_cumulative_returns[label] for
-    #               title, label
-    #               in zip(benchmarks_labels, benchmarks_tickers)}
-    #
-    # return portfolio_df, all_tickers_perf, allocation_df, benchmarks
 
 
 # @st.cache_data
@@ -310,44 +280,6 @@ def _home_kpis_ticker(portfolio_kpis):
                 unsafe_allow_html=True
             )
 
-            # col2.write("**Weekly Returns**")
-            # col2_text = f"€ {portfolio_kpis['returns']['weekly']['abs']:.2f}"
-            # col2.markdown(
-            #     f"<h2 style='color:{'red' if portfolio_kpis['returns']['daily']['abs'] < 0 else 'green'};'>{col2_text}</h2>",
-            #     unsafe_allow_html=True
-            # )
-            # col2_text = f"{portfolio_kpis['returns']['weekly']['pct']:.2f} %"
-            # col2.markdown(
-            #     # f"<div style='text-align: center;'>"
-            #     f"<div style='color:{'red' if portfolio_kpis['returns']['weekly']['pct'] < 0 else 'green'}; font-size:20px; font-weight:bold;'>{col2_text}</div>",
-            #     unsafe_allow_html=True
-            # )
-            #
-            # col3.write("**Monthly Returns**")
-            # col3_text = f"€ {portfolio_kpis['returns']['monthly']['abs']:.2f}"
-            # col3.markdown(
-            #     f"<h2 style='color:{'red' if portfolio_kpis['returns']['daily']['abs'] < 0 else 'green'};'>{col3_text}</h2>",
-            #     unsafe_allow_html=True
-            # )
-            # col3_text = f"{portfolio_kpis['returns']['monthly']['pct']:.2f} %"
-            # col3.markdown(
-            #     # f"<div style='text-align: center;'>"
-            #     f"<div style='color:{'red' if portfolio_kpis['returns']['monthly']['pct'] < 0 else 'green'}; font-size:20px; font-weight:bold;'>{col3_text}</div>",
-            #     unsafe_allow_html=True
-            # )
-            #
-            # col1, col2, col3, _ = st.columns([1, 1, 1, 2])
-            # with col1:
-            #     st.metric("Best Performing Ticker", best_ticker['ticker'])
-            #     st.metric("Worst Performing Ticker", worst_ticker['ticker'])
-            #
-            # with col2:
-            #     st.metric("Value", f"€ {best_ticker['unrealized_gains']:.2f}")
-            #     st.metric("Value", f"€ {worst_ticker['unrealized_gains']:.2f}")
-            #
-            # with col3:
-            #     st.metric("Performance", f"{best_ticker['performance']:.2f} %")
-            #     st.metric("Performance", f"{worst_ticker['performance']:.2f} %")
 
 
 def _kpis(portfolio_kpis):
@@ -613,11 +545,6 @@ def upload_data():
     st.markdown("*For better know the ticker, search it from [Yahoo Finance](https://www.finance.yahoo.com)*")
 
     st.divider()
-    # st.markdown(
-    #     "<h2 style='text-align: center;'>You can Upload or Fill by manually</h2>",
-    #     unsafe_allow_html=True
-    # )
-    #st.divider()
     st.markdown(
         "<h3 style='text-align: center;'>Upload</h3>",
         unsafe_allow_html=True
@@ -661,7 +588,7 @@ if __name__ == '__main__':
                 <hr style="border: 1px solid blue;">
             </div>
         """, unsafe_allow_html=True)
-    # load_button = st.button("📄 Load Transactions", on_click=upload_data)
+    load_button = st.button("📄 Load Transactions", on_click=upload_data)
 
     uploaded_file = None
     transactions = None
@@ -682,8 +609,7 @@ if __name__ == '__main__':
         uploaded_file = st.session_state.get("uploaded_file")
         transactions = st.session_state.get("transactions")
 
-    home_tab, perf_tab, optimization_tab, optimization_tab_2, transaction_tab = st.tabs(
-        ["Home", "Performance", "Optimization", 'Test', "Transactions"])
+    home_tab, perf_tab, optimization_tab, transaction_tab = st.tabs(TABS)
 
     if transactions is not None and uploaded_file is not None:
         # st.info('Loading Data...')
@@ -797,91 +723,6 @@ if __name__ == '__main__':
 
                 st.dataframe(diff_weights, use_container_width=True)
                 # st.text('Green coloured values -> ')
-
-    with optimization_tab_2:
-
-        if my_portfolio is not None and \
-                allocation_df is not None and \
-                portfolio_kpis is not None and \
-                portfolio_df is not None:
-            st.header("Portfolio Optimization")
-
-            target_return = None
-            target_volatility = None
-            risk_free_rate = 0.02
-            curr_weights, cur_ret, cur_vol = my_portfolio.current_weights()
-            curr_weights_sorted = curr_weights['Allocation(%)'].sort_values(ascending=False) \
-                .to_frame() \
-                .T \
-                .round(0)
-            _, mean_returns, cov_matrix = my_portfolio.get_returns_matrix()
-            # df_random, frontiers, port_opt = optimize(mean_returns,
-            #                                           cov_matrix,
-            #                                           risk_free_rate=risk_free_rate,
-            #                                           target_return=target_return,
-            #                                           target_volatility=target_volatility
-            #                                           )
-
-            st.write('**Current Portfolio Allocation**')
-            st.dataframe(curr_weights_sorted, use_container_width=False)
-            st.divider()
-
-            pills = st.pills("Choose your Strategy", options=STRATEGIES, default=STRATEGIES[0], key='test')
-            target_disabled = pills != TARGET_RETURN
-            risk_disabled = pills != SAME_RISK
-
-            input_cols = st.columns(2)
-            with input_cols[0]:
-                user_input_tr = st.number_input("Desired Annual Return (%)",
-                                                value=5.0,
-                                                step=1.0,
-                                                disabled=target_disabled,
-                                                key='test_1')
-                target_return = user_input_tr / 100.0
-            with input_cols[1]:
-                user_input_tv = st.number_input("Desired Volatility (%)",
-                                                value=15.0,
-                                                step=1.0,
-                                                disabled=risk_disabled,
-                                                key='test_2')
-                target_volatility = user_input_tv / 100.0
-
-            df_random, frontiers, port_opt = optimize(mean_returns,
-                                                      cov_matrix,
-                                                      risk_free_rate=risk_free_rate,
-                                                      target_return=target_return,
-                                                      target_volatility=target_volatility
-                                                      )
-            fig = plot_optimization(df_random, frontiers, port_opt, (cur_ret, cur_vol))
-            st.plotly_chart(fig, use_container_width=True, key='Test')
-
-            st.divider()
-            space = st.columns(3)
-            space[0].metric(label='Expected Annual Return',
-                            value=f"{port_opt[pills]['ret'] * 100:.2f} %")
-            space[1].metric(label='Annual Volatility',
-                            value=f"{port_opt[pills]['vol'] * 100:.2f} %")
-            space[2].metric(label='Sharpe Ratio',
-                            value=f"{port_opt[pills]['sharpe']:.2f}")
-            st.divider()
-
-            st.write(f'**New Allocation** following **{pills} strategy**')
-            opt_weights = pd.DataFrame(port_opt[pills]['weights'], index=['%'])
-            opt_allocation = (opt_weights * 100).round(0)
-            st.dataframe(opt_allocation, use_container_width=True)
-            st.divider()
-
-            st.write(f'**Allocation Actions**')
-            diff_curr_weights = curr_weights.rename(columns={'Allocation(%)': '%'})['%'].sort_index() / 100
-            # st.dataframe(diff_curr_weights.to_frame().T, use_container_width=True)
-            diff_opt_weights = opt_weights.T.sort_index()
-            # st.dataframe(diff_opt_weights.T, use_container_width=True)
-            diff_weights = ((diff_opt_weights.T - diff_curr_weights.T) * 100)
-            diff_weights = diff_weights.style.applymap(colorize) \
-                .format("{:.0f}") \
-                .set_properties(**{'font-size': '24pt'})
-
-            st.dataframe(diff_weights, use_container_width=True)
 
     # Transactions Tab
     with transaction_tab:
