@@ -18,6 +18,17 @@ TRANSACTIONS = 'Transactions'
 
 TABS = [HOME, PERFORMANCE, OPTIMIZATION, TRANSACTIONS]
 
+COLUMN_CONFIG = {
+        "Operation": st.column_config.SelectboxColumn(
+            label="Operation",
+            options=["Buy", "Sell"],  # Restrict options to Buy or Sell
+            help="Choose whether the transaction is a Buy or Sell"
+        ),
+        "Date": st.column_config.DateColumn("Transaction Date", format="DD/MM/YYYY"),
+        "Name": st.column_config.TextColumn("Name"),
+        "Ticker": st.column_config.TextColumn("Ticker"),
+        "Quantity": st.column_config.NumberColumn("Quantity", step=1),
+    }
 
 
 @st.cache_data
@@ -390,7 +401,7 @@ def _portfolio_performance(portfolio_kpis, cur_vol, data_dict, portfolio_df, sel
     st.markdown("---")
 
 
-def _asset_performance(portfolio_kpis, cur_vol, data_dict, portfolio_df, selected_benchmark_ticker):
+def _asset_performance(portfolio_kpis, cur_vol, data_dict, portfolio_df, selected_benchmark_ticker, all_tickers_perf):
     selected_ticker = st.multiselect("Select Ticker:", tickers, default=tickers[0])
     ticker_data_dict = {ticker: all_tickers_perf[ticker] for ticker in selected_ticker}
     titles = [value['title'].iloc[0] for _, value in ticker_data_dict.items()]
@@ -477,13 +488,19 @@ def render_performance_tab():
         portfolio_df, all_tickers_perf, allocation_df, benchmarks, portfolio_kpis = update_performance(my_portfolio,
                                                                                                        start_date,
                                                                                                        end_date)
+        portfolio_df = portfolio_df[(portfolio_df['Date'].dt.date >= start_date) & \
+                                    (portfolio_df['Date'].dt.date <= end_date)]
+        all_tickers_perf = {ticker: all_tickers_perf[ticker][(all_tickers_perf[ticker]['Date'].dt.date >= start_date) & \
+                                                             (all_tickers_perf[ticker]['Date'].dt.date <= end_date)] for ticker in all_tickers_perf}
+
         _, _, cur_vol = my_portfolio.current_weights()
         benchmarks_tickers = [df['title'].iloc[0] for x, df in benchmarks.items()]
 
         with header_cols[1]:
             st.subheader('Choose the Benchmark to compare')
             selected_benchmark_ticker = st.multiselect("Select Benchmark:", benchmarks_tickers)
-            data_dict = {ticker: benchmarks[ticker] for ticker in selected_benchmark_ticker}
+            data_dict = {ticker: benchmarks[ticker][(benchmarks[ticker]['Date'].dt.date >= start_date) &\
+                                                    (benchmarks[ticker]['Date'].dt.date <= end_date)] for ticker in selected_benchmark_ticker}
 
         st.divider()
 
@@ -493,7 +510,7 @@ def render_performance_tab():
 
         elif selection == options[1]:
             st.subheader("Asset Performance Over Time")
-            _asset_performance(portfolio_kpis, cur_vol, data_dict, portfolio_df, selected_benchmark_ticker)
+            _asset_performance(portfolio_kpis, cur_vol, data_dict, portfolio_df, selected_benchmark_ticker, all_tickers_perf)
 
 
     else:
@@ -564,7 +581,9 @@ def upload_data():
         "Quantity": [10, 5]
     })
 
-    st.dataframe(example_data, use_container_width=True)
+    st.dataframe(example_data,
+                 column_config=COLUMN_CONFIG,
+                 use_container_width=True)
     download_transactions(example_data,
                           label='Template 📃',
                           filename='template_transactions.csv')
@@ -584,11 +603,14 @@ def upload_data():
     )
     blank_data = pd.DataFrame({
         "Operation": ["Buy"],
-        "Date": ["DD/MM/YYYY"],
-        "Ticker": ["XXXX"],
-        "Quantity": ['N']
+        "Date": [pd.to_datetime("01/01/2025")],
+        "Ticker": ["Yahoo Ticker"],
+        "Quantity": [1]
     })
-    transactions_df = st.data_editor(blank_data, num_rows="dynamic", use_container_width=True)
+    transactions_df = st.data_editor(blank_data,
+                                     num_rows="dynamic",
+                                     use_container_width=True,
+                                     column_config=COLUMN_CONFIG)
     st.markdown("Please remember to download the transactions otherwise you will lose you it!")
     download_transactions(transactions_df)
 
@@ -694,18 +716,19 @@ def render_transaction_tab():
     def change_transactions():
         st.session_state['transactions'] = st.session_state['edited_transactions']
 
-
     transactions = st.session_state.get('transactions')
     st.header("Current Transactions")
     if st.button("📄 Load Transactions"):
         st.session_state["show_upload_dialog"] = True
         st.rerun()
-    st.markdown("You can **Add** | **Edit** | **Remove** the transactions:")
+
     if transactions is not None:
+        st.markdown("You can **Add** | **Edit** | **Remove** the transactions:")
         st.session_state["edited_transactions"] = transactions.copy()
         edited_transactions = st.data_editor(st.session_state["edited_transactions"],
                                              use_container_width=True,
-                                             num_rows='dynamic')
+                                             num_rows='dynamic',
+                                             column_config=COLUMN_CONFIG)
         st.session_state["edited_transactions"] = edited_transactions
         st.button('Submit changes', on_click=change_transactions)
         download_transactions(edited_transactions)
