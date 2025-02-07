@@ -566,28 +566,29 @@ def download_transactions(transactions_df,
 
 @st.dialog('Upload/Fill your transactions', width='large')
 def upload_data():
-    st.markdown(
-        "<h2 style='text-align: center;'>Transactions Format</h2>",
-        unsafe_allow_html=True
-    )
-    st.markdown("Make sure your transactions file follows this format:")
+    # st.markdown(
+    #     "<h2 style='text-align: center;'>Transactions Format</h2>",
+    #     unsafe_allow_html=True
+    # )
+    st.markdown("Make sure your transactions file follows the right format")
+    with st.expander('Transaction Format'):
 
-    # Example dataframe structure
-    example_data = pd.DataFrame({
-        "Operation": ["Buy", "Sell"],
-        "Date": ["01/01/24", "15/02/24"],
-        "Name": ['Apple', 'Google'],
-        "Ticker": ["AAPL", "GOOGL"],
-        "Quantity": [10, 5]
-    })
+        # Example dataframe structure
+        example_data = pd.DataFrame({
+            "Operation": ["Buy", "Sell"],
+            "Date": ["01/01/24", "15/02/24"],
+            "Name": ['Apple', 'Google'],
+            "Ticker": ["AAPL", "GOOGL"],
+            "Quantity": [10, 5]
+        })
 
-    st.dataframe(example_data,
-                 column_config=COLUMN_CONFIG,
-                 use_container_width=True)
-    download_transactions(example_data,
-                          label='Template 📃',
-                          filename='template_transactions.csv')
-    st.markdown("*For better know the ticker, search it from [Yahoo Finance](https://www.finance.yahoo.com)*")
+        st.dataframe(example_data,
+                     column_config=COLUMN_CONFIG,
+                     use_container_width=True)
+        download_transactions(example_data,
+                              label='Template 📃',
+                              filename='template_transactions.csv')
+        st.markdown("*For better know the ticker, search it from [Yahoo Finance](https://www.finance.yahoo.com)*")
 
     st.divider()
     st.markdown(
@@ -607,10 +608,12 @@ def upload_data():
         "Ticker": ["Yahoo Ticker"],
         "Quantity": [1]
     })
+    st.markdown("*For better know the ticker, search it from [Yahoo Finance](https://www.finance.yahoo.com)*")
     transactions_df = st.data_editor(blank_data,
                                      num_rows="dynamic",
                                      use_container_width=True,
                                      column_config=COLUMN_CONFIG)
+
     st.markdown("Please remember to download the transactions otherwise you will lose you it!")
     download_transactions(transactions_df)
 
