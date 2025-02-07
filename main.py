@@ -750,7 +750,7 @@ if __name__ == '__main__':
     st.markdown("""
             <div style="text-align: center;">
                 <h1>💸 My Financial Vision 💸</h1>
-                <h3>Track you movements in one place 🔒</h3>
+                <h3>Own Your Finances, Own Your Future 🔒</h3>
                 <hr style="border: 1px solid blue;">
             </div>
         """, unsafe_allow_html=True)
