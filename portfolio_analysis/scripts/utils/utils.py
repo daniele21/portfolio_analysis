@@ -1,3 +1,6 @@
+from portfolio_analysis.scripts.constants.color import GREEN, RED
+
+
 def colorize(val):
     try:
         number = int(val)
@@ -9,9 +12,8 @@ def colorize(val):
 
     # Append color based on positive or negative
     if number > 0:
-        style += "color: green;"
+        style += f"color: {GREEN};"
     elif number < 0:
-        style += "color: red;"
+        style += f"color: {RED};"
 
     return style
-
