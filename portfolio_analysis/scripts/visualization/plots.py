@@ -1,19 +1,32 @@
+import matplotlib.colors as mcolors
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.express.colors import qualitative as qc
-import matplotlib.colors as mcolors
+
+from portfolio_analysis.scripts.constants.color import (
+    BLACK,
+    BLUE,
+    GREEN,
+    ORANGE,
+    PINK,
+    RED,
+    YELLOW,
+)
 
 # Create a linear gradient from one color to another (e.g., lightblue to darkblue)
 cmap = mcolors.LinearSegmentedColormap.from_list("gradient", ["lightblue", "darkblue"])
 
 # Generate a list of colors for n_segments
 n_segments = 10  # Number of gradient segments
-colors = [mcolors.to_rgba(cmap(i/(n_segments-1)), alpha=0.5) for i in range(n_segments)]
+colors = [
+    mcolors.to_rgba(cmap(i / (n_segments - 1)), alpha=0.5) for i in range(n_segments)
+]
 
 # --------------------------------------------------------------------
 # EXISTING / REFACTORED PLOTS
 # --------------------------------------------------------------------
+
 
 def plot_optimization(df_random, frontiers, port_opt, current_portfolio_ret_vol):
 
@@ -23,70 +36,83 @@ def plot_optimization(df_random, frontiers, port_opt, current_portfolio_ret_vol)
         y="Return",
         color="Sharpe",
         color_continuous_scale="RdBu",
-        title=f"Efficient Frontier"
+        title=f"Efficient Frontier",
     )
     fig.update_traces(marker=dict(size=4))
 
-    fig.add_trace(go.Scatter(
-        x=frontiers['vols'],
-        y=frontiers['rets'],
-        mode='lines',
-        name='Efficient Frontier',
-        line=dict(color='black', width=2),
-        # fill='tozeroy',  # Fill area under the line
-        # fillcolor='rgba(0, 0, 0, 0.05)'
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=frontiers["vols"],
+            y=frontiers["rets"],
+            mode="lines",
+            name="Efficient Frontier",
+            line=dict(color=f"{BLACK}", width=2),
+            # fill='tozeroy',  # Fill area under the line
+            # fillcolor='rgba(0, 0, 0, 0.05)'
+        )
+    )
 
-    for strategy, color in zip(port_opt.keys(), ['orange', 'yellow', 'black', 'pink']):
-        allocation_text = "<br>".join([f"{ticker}: {weight:.0%}" for ticker, weight in port_opt[strategy]['weights'].items()])
-        fig.add_trace(go.Scatter(
-            x=[port_opt[strategy]['vol']],
-            y=[port_opt[strategy]['ret']],
-            mode='markers',
-            marker=dict(
-                color=color,
-                size=14,  # Increase size for prominence
-                symbol='star',
-                line=dict(width=1.5, color='black'),  # Add a contrasting outline
-                opacity=1  # Ensure fully opaque markers
-            ),
-            name=strategy,
-            text=[f"<b>{strategy}</b><br>{allocation_text}"],
-            hoverinfo='text'
-        ))
+    for strategy, color in zip(
+        port_opt.keys(),
+        [f"{ORANGE}", f"{YELLOW}", f"{BLACK}", f"{PINK}"],
+    ):
+        allocation_text = "<br>".join(
+            [
+                f"{ticker}: {weight:.0%}"
+                for ticker, weight in port_opt[strategy]["weights"].items()
+            ]
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=[port_opt[strategy]["vol"]],
+                y=[port_opt[strategy]["ret"]],
+                mode="markers",
+                marker=dict(
+                    color=color,
+                    size=14,  # Increase size for prominence
+                    symbol="star",
+                    line=dict(width=1.5, color=f"{BLACK}"),  # Add a contrasting outline
+                    opacity=1,  # Ensure fully opaque markers
+                ),
+                name=strategy,
+                text=[f"<b>{strategy}</b><br>{allocation_text}"],
+                hoverinfo="text",
+            )
+        )
 
     # if current_portfolio_ret_vol is not None:
     cur_ret, cur_vol = current_portfolio_ret_vol
-    fig.add_trace(go.Scatter(
-        x=[cur_vol],
-        y=[cur_ret],
-        mode='markers',
-        marker=dict(
-            color='red',
-            size=14,  # Increase size for prominence
-            symbol='diamond',
-            line=dict(width=1.5, color='black'),  # Add a contrasting outline
-            opacity=1  # Ensure fully opaque markers
-        ),
-        name='Current Portfolio'
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=[cur_vol],
+            y=[cur_ret],
+            mode="markers",
+            marker=dict(
+                color=f"{RED}",
+                size=14,  # Increase size for prominence
+                symbol="diamond",
+                line=dict(width=1.5, color=f"{BLACK}"),  # Add a contrasting outline
+                opacity=1,  # Ensure fully opaque markers
+            ),
+            name="Current Portfolio",
+        )
+    )
 
     fig.update_layout(
         xaxis_title="Annualized Volatility (σ)",
         yaxis_title="Annualized Return (μ)",
         height=700,
         legend=dict(
-            orientation="h",
-            x=0.5,
-            y=1.1,  # slightly above the plot
-            xanchor="center"
-        )
+            orientation="h", x=0.5, y=1.1, xanchor="center"  # slightly above the plot
+        ),
     )
-
 
     return fig
 
-def create_transaction_annotated_line_chart(portfolio_df, transactions, name_col="Performance"):
+
+def create_transaction_annotated_line_chart(
+    portfolio_df, transactions, name_col="Performance"
+):
     """
     Create a line chart of portfolio performance (e.g. 'Performance(%)') with annotations
     for buy/sell events, ensuring markers on the same date are slightly offset.
@@ -99,13 +125,15 @@ def create_transaction_annotated_line_chart(portfolio_df, transactions, name_col
     fig = go.Figure()
 
     # 1) Line chart for the chosen performance metric
-    fig.add_trace(go.Scatter(
-        x=portfolio_df['Date'],
-        y=portfolio_df[name_col],
-        mode='lines',
-        name=f'Portfolio {name_col}',
-        line=dict(color='blue', width=2)
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=portfolio_df["Date"],
+            y=portfolio_df[name_col],
+            mode="lines",
+            name=f"Portfolio {name_col}",
+            line=dict(color=f"{BLUE}", width=2),
+        )
+    )
 
     # 2) Add buy/sell markers with slight vertical offsets
     marker_offsets = {}
@@ -113,9 +141,9 @@ def create_transaction_annotated_line_chart(portfolio_df, transactions, name_col
     first_sell = True
 
     for _, txn in transactions.iterrows():
-        event = txn['Operation'].lower()
-        txn_date = txn['Date']
-        performance_slice = portfolio_df.loc[portfolio_df['Date'] == txn_date, name_col]
+        event = txn["Operation"].lower()
+        txn_date = txn["Date"]
+        performance_slice = portfolio_df.loc[portfolio_df["Date"] == txn_date, name_col]
 
         if not performance_slice.empty:
             performance_value = performance_slice.values[0]
@@ -129,27 +157,29 @@ def create_transaction_annotated_line_chart(portfolio_df, transactions, name_col
             adjusted_val = performance_value + marker_offsets[txn_date]
 
             showlegend = False
-            if event == 'buy' and first_buy:
+            if event == "buy" and first_buy:
                 showlegend = True
                 first_buy = False
-            elif event == 'sell' and first_sell:
+            elif event == "sell" and first_sell:
                 showlegend = True
                 first_sell = False
 
-            fig.add_trace(go.Scatter(
-                x=[txn_date],
-                y=[adjusted_val],
-                mode='markers+text',
-                name="Buy" if event == "buy" else "Sell",
-                marker=dict(
-                    size=10,
-                    color='green' if event == 'buy' else 'red',
-                    symbol='triangle-up' if event == 'buy' else 'triangle-down'
-                ),
-                text=f"{event.capitalize()} {txn['Ticker']}",
-                textposition="top center",
-                showlegend=showlegend
-            ))
+            fig.add_trace(
+                go.Scatter(
+                    x=[txn_date],
+                    y=[adjusted_val],
+                    mode="markers+text",
+                    name="Buy" if event == "buy" else "Sell",
+                    marker=dict(
+                        size=10,
+                        color=f"{GREEN}" if event == "buy" else f"{RED}",
+                        symbol="triangle-up" if event == "buy" else "triangle-down",
+                    ),
+                    text=f"{event.capitalize()} {txn['Ticker']}",
+                    textposition="top center",
+                    showlegend=showlegend,
+                )
+            )
 
     fig.update_layout(
         title=f"Portfolio {name_col} Over Time with Transactions",
@@ -157,21 +187,21 @@ def create_transaction_annotated_line_chart(portfolio_df, transactions, name_col
         yaxis_title=name_col,
         template="plotly_white",
         hovermode="x unified",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
 
     return fig
 
 
 def plot_performance_with_annotations(
-        portfolio_df=None,
-        items=None,
-        transactions=None,
-        date_col="Date",
-        perf_col="Performance",
-        portfolio_label="Portfolio",
-        item_labels=None,
-        title="Performance Over Time"
+    portfolio_df=None,
+    items=None,
+    transactions=None,
+    date_col="Date",
+    perf_col="Performance",
+    portfolio_label="Portfolio",
+    item_labels=None,
+    title="Performance Over Time",
 ):
     """
     Generalized function to plot performance over time for:
@@ -193,14 +223,18 @@ def plot_performance_with_annotations(
     # 1) Plot the portfolio line
     if portfolio_df is not None:
         if date_col not in portfolio_df.columns or perf_col not in portfolio_df.columns:
-            raise ValueError(f"Portfolio DataFrame must contain '{date_col}' and '{perf_col}' columns.")
-        fig.add_trace(go.Scatter(
-            x=portfolio_df[date_col],
-            y=portfolio_df[perf_col],
-            mode='lines',
-            name=portfolio_label,
-            line=dict(color='blue', width=3)
-        ))
+            raise ValueError(
+                f"Portfolio DataFrame must contain '{date_col}' and '{perf_col}' columns."
+            )
+        fig.add_trace(
+            go.Scatter(
+                x=portfolio_df[date_col],
+                y=portfolio_df[perf_col],
+                mode="lines",
+                name=portfolio_label,
+                line=dict(color=f"{BLUE}", width=3),
+            )
+        )
 
     # 2) Handle multiple items (e.g., tickers or benchmarks)
     if items is not None:
@@ -216,16 +250,20 @@ def plot_performance_with_annotations(
             color = color_cycle[i % len(color_cycle)]
 
             if date_col not in df_item.columns or perf_col not in df_item.columns:
-                print(f"Skipping {symbol}: missing '{date_col}' or '{perf_col}' in DataFrame.")
+                print(
+                    f"Skipping {symbol}: missing '{date_col}' or '{perf_col}' in DataFrame."
+                )
                 continue
 
-            fig.add_trace(go.Scatter(
-                x=df_item[date_col],
-                y=df_item[perf_col],
-                mode='lines',
-                name=label,
-                line=dict(color=color, width=2)
-            ))
+            fig.add_trace(
+                go.Scatter(
+                    x=df_item[date_col],
+                    y=df_item[perf_col],
+                    mode="lines",
+                    name=label,
+                    line=dict(color=color, width=2),
+                )
+            )
 
     # 3) Add transaction markers
     if transactions is not None:
@@ -239,9 +277,17 @@ def plot_performance_with_annotations(
             ticker = txn.get("Ticker", "Portfolio")
 
             # Find corresponding y-value for the transaction's date
-            performance_df = portfolio_df if ticker == "Portfolio" else items.get(ticker, None)
-            if performance_df is not None and date_col in performance_df.columns and perf_col in performance_df.columns:
-                performance_slice = performance_df.loc[performance_df[date_col] == txn_date, perf_col]
+            performance_df = (
+                portfolio_df if ticker == "Portfolio" else items.get(ticker, None)
+            )
+            if (
+                performance_df is not None
+                and date_col in performance_df.columns
+                and perf_col in performance_df.columns
+            ):
+                performance_slice = performance_df.loc[
+                    performance_df[date_col] == txn_date, perf_col
+                ]
 
                 if not performance_slice.empty:
                     performance_value = performance_slice.values[0]
@@ -263,20 +309,24 @@ def plot_performance_with_annotations(
                         showlegend = True
                         first_sell = False
 
-                    fig.add_trace(go.Scatter(
-                        x=[txn_date],
-                        y=[adjusted_val],
-                        mode='markers+text',
-                        name="Buy" if event == "buy" else "Sell",
-                        marker=dict(
-                            size=10,
-                            color="green" if event == "buy" else "red",
-                            symbol="triangle-up" if event == "buy" else "triangle-down"
-                        ),
-                        text=f"{event.capitalize()} {ticker}",
-                        textposition="top center",
-                        showlegend=showlegend
-                    ))
+                    fig.add_trace(
+                        go.Scatter(
+                            x=[txn_date],
+                            y=[adjusted_val],
+                            mode="markers+text",
+                            name="Buy" if event == "buy" else "Sell",
+                            marker=dict(
+                                size=10,
+                                color=f"{GREEN}" if event == "buy" else f"{RED}",
+                                symbol=(
+                                    "triangle-up" if event == "buy" else "triangle-down"
+                                ),
+                            ),
+                            text=f"{event.capitalize()} {ticker}",
+                            textposition="top center",
+                            showlegend=showlegend,
+                        )
+                    )
 
     # 4) Final layout settings
     fig.update_layout(
@@ -285,7 +335,7 @@ def plot_performance_with_annotations(
         yaxis_title=perf_col,
         template="plotly_white",
         hovermode="x unified",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
 
     return fig
@@ -305,54 +355,58 @@ def plot_close_price_with_transactions(ticker, ticker_performance_df, transactio
     df = ticker_performance_df.copy()
 
     # Filter relevant transactions
-    ticker_txns = transactions[transactions['Ticker'] == ticker]
+    ticker_txns = transactions[transactions["Ticker"] == ticker]
 
     fig = go.Figure()
 
     # Plot close price
-    fig.add_trace(go.Scatter(
-        x=df['Date'],
-        y=df['Close'],
-        mode='lines',
-        name='Close Price',
-        line=dict(color='blue', width=2)
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=df["Date"],
+            y=df["Close"],
+            mode="lines",
+            name="Close Price",
+            line=dict(color=f"{BLUE}", width=2),
+        )
+    )
 
     # Add buy/sell markers
     first_buy = True
     first_sell = True
     for _, txn in ticker_txns.iterrows():
-        event = txn['Operation'].lower()
-        txn_date = txn['Date']
+        event = txn["Operation"].lower()
+        txn_date = txn["Date"]
         # Check if we have data for that date
-        row_slice = df.loc[df['Date'] == txn_date, 'Close']
+        row_slice = df.loc[df["Date"] == txn_date, "Close"]
         if not row_slice.empty:
             price = row_slice.iloc[0]
 
             if pd.notna(price):
-                if event == 'buy' and first_buy:
-                    legend_name = 'Buy'
+                if event == "buy" and first_buy:
+                    legend_name = "Buy"
                     first_buy = False
-                elif event == 'sell' and first_sell:
-                    legend_name = 'Sell'
+                elif event == "sell" and first_sell:
+                    legend_name = "Sell"
                     first_sell = False
                 else:
                     legend_name = None
 
-                fig.add_trace(go.Scatter(
-                    x=[txn_date],
-                    y=[price],
-                    mode='markers+text',
-                    name=legend_name,
-                    marker=dict(
-                        size=10,
-                        color='green' if event == 'buy' else 'red',
-                        symbol='triangle-up' if event == 'buy' else 'triangle-down'
-                    ),
-                    text=f"{event.capitalize()}",
-                    textposition="top center",
-                    showlegend=(legend_name is not None)
-                ))
+                fig.add_trace(
+                    go.Scatter(
+                        x=[txn_date],
+                        y=[price],
+                        mode="markers+text",
+                        name=legend_name,
+                        marker=dict(
+                            size=10,
+                            color=f"{GREEN}" if event == "buy" else f"{RED}",
+                            symbol="triangle-up" if event == "buy" else "triangle-down",
+                        ),
+                        text=f"{event.capitalize()}",
+                        textposition="top center",
+                        showlegend=(legend_name is not None),
+                    )
+                )
 
     fig.update_layout(
         title=f"Close Price and Transactions for {ticker}",
@@ -360,7 +414,7 @@ def plot_close_price_with_transactions(ticker, ticker_performance_df, transactio
         yaxis_title="Close Price",
         template="plotly_white",
         hovermode="x unified",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
 
     return fig
@@ -375,65 +429,71 @@ def plot_unrealized_gains(ticker, ticker_performance_df, transactions):
         raise ValueError(f"No performance data found for ticker {ticker}")
 
     df = ticker_performance_df.copy()
-    df = df[df['Quantity Held'] > 0]
+    df = df[df["Quantity Held"] > 0]
 
     if df.empty:
         raise ValueError(f"No data for {ticker} with a non-zero Quantity Held.")
 
     # Calculate cumulative percentage of unrealized gains
-    df['Cumulative Unrealized Gain (%)'] = (df['Unrealized Gains'] / df['Cost Basis']) * 100
+    df["Cumulative Unrealized Gain (%)"] = (
+        df["Unrealized Gains"] / df["Cost Basis"]
+    ) * 100
 
     # Filter transactions for the selected ticker
-    ticker_txns = transactions[transactions['Ticker'] == ticker]
+    ticker_txns = transactions[transactions["Ticker"] == ticker]
 
     fig = go.Figure()
 
     # Plot cumulative percentage of unrealized gains
-    fig.add_trace(go.Scatter(
-        x=df['Date'],
-        y=df['Cumulative Unrealized Gain (%)'],
-        mode='lines',
-        name='Unrealized Gain (%)',
-        line=dict(color='blue', width=2)
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=df["Date"],
+            y=df["Cumulative Unrealized Gain (%)"],
+            mode="lines",
+            name="Unrealized Gain (%)",
+            line=dict(color=f"{BLUE}", width=2),
+        )
+    )
 
     # Add buy/sell markers
     first_buy = True
     first_sell = True
     for _, txn in ticker_txns.iterrows():
-        event = txn['Operation'].lower()
-        txn_date = txn['Date']
-        row_slice = df.loc[df['Date'] == txn_date, 'Cumulative Unrealized Gain (%)']
+        event = txn["Operation"].lower()
+        txn_date = txn["Date"]
+        row_slice = df.loc[df["Date"] == txn_date, "Cumulative Unrealized Gain (%)"]
         if not row_slice.empty:
             perf_val = row_slice.iloc[0]
 
             if pd.notna(perf_val):
-                if event == 'buy' and first_buy:
-                    legend_name = 'Buy'
+                if event == "buy" and first_buy:
+                    legend_name = "Buy"
                     first_buy = False
-                elif event == 'sell' and first_sell:
-                    legend_name = 'Sell'
+                elif event == "sell" and first_sell:
+                    legend_name = "Sell"
                     first_sell = False
                 else:
                     legend_name = None
 
-                marker_symbol = 'triangle-up' if event == 'buy' else 'triangle-down'
-                marker_color = 'green' if event == 'buy' else 'red'
+                marker_symbol = "triangle-up" if event == "buy" else "triangle-down"
+                marker_color = f"{GREEN}" if event == "buy" else f"{RED}"
 
-                fig.add_trace(go.Scatter(
-                    x=[txn_date],
-                    y=[perf_val],
-                    mode='markers+text',
-                    name=legend_name,
-                    marker=dict(
-                        size=12,
-                        color=marker_color,
-                        symbol=marker_symbol,
-                    ),
-                    text=f"{event.capitalize()}",
-                    textposition="top center",
-                    showlegend=(legend_name is not None)
-                ))
+                fig.add_trace(
+                    go.Scatter(
+                        x=[txn_date],
+                        y=[perf_val],
+                        mode="markers+text",
+                        name=legend_name,
+                        marker=dict(
+                            size=12,
+                            color=marker_color,
+                            symbol=marker_symbol,
+                        ),
+                        text=f"{event.capitalize()}",
+                        textposition="top center",
+                        showlegend=(legend_name is not None),
+                    )
+                )
 
     fig.update_layout(
         title=f"Cumulative Unrealized Gain (%) for {ticker}",
@@ -441,7 +501,7 @@ def plot_unrealized_gains(ticker, ticker_performance_df, transactions):
         yaxis_title="Cumulative Unrealized Gain (%)",
         template="plotly_white",
         hovermode="x unified",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
 
     return fig
@@ -455,19 +515,24 @@ def create_pie_chart(allocation_df, x):
     # Sort the data for better visualization (largest to smallest slice)
     allocation_df = allocation_df.sort_values(by="MarketValue", ascending=False)
 
-    fig = px.pie(allocation_df, names=x, values='MarketValue',
-                 )
+    fig = px.pie(
+        allocation_df,
+        names=x,
+        values="MarketValue",
+    )
 
     fig.update_traces(
-        textposition='inside',
-        textinfo='percent+label',
-        insidetextfont=dict(size=14, color='white'),
-        outsidetextfont=dict(size=12, color='black'),
-        marker=dict(line=dict(color='white', width=2)),  # Add white border around slices
+        textposition="inside",
+        textinfo="percent+label",
+        insidetextfont=dict(size=14, color="white"),
+        outsidetextfont=dict(size=12, color=f"{BLACK}"),
+        marker=dict(
+            line=dict(color="white", width=2)
+        ),  # Add white border around slices
     )
 
     fig.update_layout(
-        template='plotly_white',
+        template="plotly_white",
         autosize=True,
         margin=dict(l=40, r=40, t=60, b=20),  # Adjust margins for better spacing
         width=600,  # Set chart width
@@ -485,27 +550,35 @@ def create_pie_chart(allocation_df, x):
             y=0,  # Position below the chart
             xanchor="center",  # Center the legend horizontally
             x=0.5,  # Adjust horizontal position
-        )
+        ),
     )
 
     return fig
 
 
-
-def create_bar_chart(allocation_df, value_col='Unrealized Gains', title='Value by Ticker'):
+def create_bar_chart(
+    allocation_df, value_col="Unrealized Gains", title="Value by Ticker"
+):
     """
     Plot a simple bar chart for the given value_col against Ticker.
     By default, it shows Unrealized Gains by Ticker.
     """
-    fig = go.Figure(data=[
-        go.Bar(name='Value', x=allocation_df['Ticker'], y=allocation_df[value_col], marker_color='blue')
-    ])
+    fig = go.Figure(
+        data=[
+            go.Bar(
+                name="Value",
+                x=allocation_df["Ticker"],
+                y=allocation_df[value_col],
+                marker_color=f"{BLUE}",
+            )
+        ]
+    )
     fig.update_layout(
         title=title,
         xaxis_title="Ticker",
         yaxis_title="Amount",
-        barmode='group',
-        template='plotly_white'
+        barmode="group",
+        template="plotly_white",
     )
     return fig
 
@@ -514,17 +587,20 @@ def create_bar_chart(allocation_df, value_col='Unrealized Gains', title='Value b
 # NEW / ADDITIONAL PLOTS FOR EXTRA KPI VISUALIZATIONS
 # --------------------------------------------------------------------
 
+
 def plot_portfolio_value_over_time(portfolio_df):
     """
     Line chart of the portfolio's Total Value over time.
     Expects portfolio_df with columns ['Date', 'Total Value'].
     """
-    fig = px.line(portfolio_df, x='Date', y='Total Value', title="Total Portfolio Value Over Time")
-    fig.update_layout(template='plotly_white', hovermode='x unified')
+    fig = px.line(
+        portfolio_df, x="Date", y="Total Value", title="Total Portfolio Value Over Time"
+    )
+    fig.update_layout(template="plotly_white", hovermode="x unified")
     return fig
 
 
-def plot_daily_returns(portfolio_df, col='Daily Performance (%)', rolling_window=None):
+def plot_daily_returns(portfolio_df, col="Daily Performance (%)", rolling_window=None):
     """
     Plots a bar (or line) chart of the daily returns.
     :param portfolio_df: DataFrame with at least ['Date', col] (in %)
@@ -532,35 +608,33 @@ def plot_daily_returns(portfolio_df, col='Daily Performance (%)', rolling_window
     :param rolling_window: Optionally compute a rolling average (e.g. 7 for 7-day).
     """
     df = portfolio_df.copy()
-    df['Daily Returns'] = df[col]  # already in % or decimal
+    df["Daily Returns"] = df[col]  # already in % or decimal
     if rolling_window:
         # e.g. compute rolling average
-        df['RollingAvg'] = df['Daily Returns'].rolling(rolling_window).mean()
+        df["RollingAvg"] = df["Daily Returns"].rolling(rolling_window).mean()
 
     fig = go.Figure()
     # Plot as bar for daily returns
-    fig.add_trace(go.Bar(
-        x=df['Date'],
-        y=df['Daily Returns'],
-        name='Daily Returns'
-    ))
+    fig.add_trace(go.Bar(x=df["Date"], y=df["Daily Returns"], name="Daily Returns"))
 
     # Optionally add a line for rolling average
     if rolling_window:
-        fig.add_trace(go.Scatter(
-            x=df['Date'],
-            y=df['RollingAvg'],
-            mode='lines',
-            line=dict(color='red', width=2),
-            name=f'{rolling_window}-day Avg'
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=df["Date"],
+                y=df["RollingAvg"],
+                mode="lines",
+                line=dict(color=f"{RED}", width=2),
+                name=f"{rolling_window}-day Avg",
+            )
+        )
 
     fig.update_layout(
         title="Daily Returns",
         xaxis_title="Date",
         yaxis_title="Daily Returns (%)",
-        template='plotly_white',
-        hovermode='x unified'
+        template="plotly_white",
+        hovermode="x unified",
     )
     return fig
 
@@ -571,33 +645,40 @@ def plot_bar_realized_vs_unrealized(allocation_df):
     Assumes allocation_df has columns: ['Ticker', 'Unrealized Gains', 'Realized Gains'].
     """
     fig = go.Figure()
-    fig.add_trace(go.Bar(
-        x=allocation_df['Ticker'],
-        y=allocation_df['Realized Gains'],
-        name='Realized Gains',
-        marker_color='orange'
-    ))
-    fig.add_trace(go.Bar(
-        x=allocation_df['Ticker'],
-        y=allocation_df['Unrealized Gains'],
-        name='Unrealized Gains',
-        marker_color='blue'
-    ))
+    fig.add_trace(
+        go.Bar(
+            x=allocation_df["Ticker"],
+            y=allocation_df["Realized Gains"],
+            name="Realized Gains",
+            marker_color=f"{ORANGE}",
+        )
+    )
+    fig.add_trace(
+        go.Bar(
+            x=allocation_df["Ticker"],
+            y=allocation_df["Unrealized Gains"],
+            name="Unrealized Gains",
+            marker_color=f"{BLUE}",
+        )
+    )
 
     fig.update_layout(
         title="Realized vs. Unrealized Gains by Ticker",
         xaxis_title="Ticker",
         yaxis_title="Amount",
-        barmode='group',
-        template='plotly_white',
-        hovermode='x unified'
+        barmode="group",
+        template="plotly_white",
+        hovermode="x unified",
     )
     return fig
 
 
-def plot_portfolio_vs_benchmark(portfolio_df, benchmark_df,
-                                portfolio_col='Daily Performance (%)',
-                                benchmark_col='Daily Bench Return (%)'):
+def plot_portfolio_vs_benchmark(
+    portfolio_df,
+    benchmark_df,
+    portfolio_col="Daily Performance (%)",
+    benchmark_col="Daily Bench Return (%)",
+):
     """
     Plot a line chart comparing the portfolio's daily returns vs. a benchmark's daily returns.
     Both columns should be in percent form.
@@ -608,42 +689,46 @@ def plot_portfolio_vs_benchmark(portfolio_df, benchmark_df,
     :param benchmark_col: column name in benchmark_df for daily returns
     """
     # Merge them on Date
-    df_compare = pd.merge(portfolio_df[['Date', portfolio_col]],
-                          benchmark_df[['Date', benchmark_col]],
-                          on='Date', how='outer').fillna(0)
+    df_compare = pd.merge(
+        portfolio_df[["Date", portfolio_col]],
+        benchmark_df[["Date", benchmark_col]],
+        on="Date",
+        how="outer",
+    ).fillna(0)
 
     fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=df_compare['Date'],
-        y=df_compare[portfolio_col],
-        mode='lines',
-        name='Portfolio',
-        line=dict(color='blue')
-    ))
-    fig.add_trace(go.Scatter(
-        x=df_compare['Date'],
-        y=df_compare[benchmark_col],
-        mode='lines',
-        name='Benchmark',
-        line=dict(color='red')
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=df_compare["Date"],
+            y=df_compare[portfolio_col],
+            mode="lines",
+            name="Portfolio",
+            line=dict(color=f"{BLUE}"),
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=df_compare["Date"],
+            y=df_compare[benchmark_col],
+            mode="lines",
+            name="Benchmark",
+            line=dict(color=f"{RED}"),
+        )
+    )
 
     fig.update_layout(
         title="Portfolio vs. Benchmark Daily Returns (%)",
         xaxis_title="Date",
         yaxis_title="Daily Returns (%)",
-        template='plotly_white',
-        hovermode='x unified',
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        template="plotly_white",
+        hovermode="x unified",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
     return fig
 
 
 def plot_cumulative_returns(
-        portfolio_df,
-        benchmarks=None,
-        portfolio_label="Portfolio",
-        benchmark_labels=None
+    portfolio_df, benchmarks=None, portfolio_label="Portfolio", benchmark_labels=None
 ):
     """
     Create a line chart showing 'Cumulative Return (%)' over time
@@ -662,13 +747,15 @@ def plot_cumulative_returns(
     if "Performance (%)" not in portfolio_df.columns:
         raise ValueError("portfolio_df must have a 'Performance (%)' column.")
 
-    fig.add_trace(go.Scatter(
-        x=portfolio_df["Date"],
-        y=portfolio_df["Performance (%)"],
-        mode='lines',
-        name=portfolio_label,
-        line=dict(color='blue', width=2)
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=portfolio_df["Date"],
+            y=portfolio_df["Performance (%)"],
+            mode="lines",
+            name=portfolio_label,
+            line=dict(color=f"{BLUE}", width=2),
+        )
+    )
 
     # 3) Handle multiple benchmarks
     if benchmarks is not None:
@@ -690,21 +777,24 @@ def plot_cumulative_returns(
                 raise ValueError(f"Benchmark {i} missing 'Performance (%)' column.")
 
             # Merge with portfolio dates to align and ffill missing values
-            merged = portfolio_df[["Date"]].merge(
-                bench_df[["Date", "Performance (%)"]],
-                on="Date", how="outer"
-            ).sort_values("Date")
+            merged = (
+                portfolio_df[["Date"]]
+                .merge(bench_df[["Date", "Performance (%)"]], on="Date", how="outer")
+                .sort_values("Date")
+            )
 
-            merged.fillna(method='ffill', inplace=True)  # forward-fill
+            merged.fillna(method="ffill", inplace=True)  # forward-fill
             merged.fillna(0, inplace=True)  # fallback if forward-fill can't apply
 
-            fig.add_trace(go.Scatter(
-                x=merged["Date"],
-                y=merged["Performance (%)"],
-                mode='lines',
-                name=label,
-                line=dict(color=color, width=2)
-            ))
+            fig.add_trace(
+                go.Scatter(
+                    x=merged["Date"],
+                    y=merged["Performance (%)"],
+                    mode="lines",
+                    name=label,
+                    line=dict(color=color, width=2),
+                )
+            )
 
     # 4) Final layout
     fig.update_layout(
@@ -713,16 +803,19 @@ def plot_cumulative_returns(
         yaxis_title="Performance (%)",
         template="plotly_white",
         hovermode="x unified",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
 
     return fig
 
 
-def plot_portfolio_and_tickers_performance(portfolio_df, all_tickers_perf,
-                                           portfolio_col='Performance',
-                                           ticker_col='Performance',
-                                           portfolio_label='Portfolio'):
+def plot_portfolio_and_tickers_performance(
+    portfolio_df,
+    all_tickers_perf,
+    portfolio_col="Performance",
+    ticker_col="Performance",
+    portfolio_label="Portfolio",
+):
     """
     Plot a single figure comparing the portfolio's performance line (e.g. Performance %)
     and each individual ticker's performance over time.
@@ -740,13 +833,15 @@ def plot_portfolio_and_tickers_performance(portfolio_df, all_tickers_perf,
 
     # 1) Add the portfolio line
     if portfolio_col in portfolio_df.columns:
-        fig.add_trace(go.Scatter(
-            x=portfolio_df['Date'],
-            y=portfolio_df[portfolio_col],
-            mode='lines',
-            name=portfolio_label,
-            line=dict(color='black', width=3)
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=portfolio_df["Date"],
+                y=portfolio_df[portfolio_col],
+                mode="lines",
+                name=portfolio_label,
+                line=dict(color=f"{BLACK}", width=3),
+            )
+        )
     else:
         raise ValueError(f"Column '{portfolio_col}' not found in portfolio_df.")
 
@@ -757,12 +852,14 @@ def plot_portfolio_and_tickers_performance(portfolio_df, all_tickers_perf,
             print(f"Warning: '{ticker_col}' not found in ticker '{symbol}' DataFrame.")
             continue
 
-        fig.add_trace(go.Scatter(
-            x=df_ticker['Date'],
-            y=df_ticker[ticker_col],
-            mode='lines',
-            name=str(symbol)  # Legend label is the ticker symbol
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=df_ticker["Date"],
+                y=df_ticker[ticker_col],
+                mode="lines",
+                name=str(symbol),  # Legend label is the ticker symbol
+            )
+        )
 
     # Layout settings
     fig.update_layout(
@@ -771,13 +868,13 @@ def plot_portfolio_and_tickers_performance(portfolio_df, all_tickers_perf,
         yaxis_title="Performance",
         template="plotly_white",
         hovermode="x unified",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
 
     return fig
 
 
-def plot_portfolio_performance(portfolio_df, performance_col='Performance (%)'):
+def plot_portfolio_performance(portfolio_df, performance_col="Performance (%)"):
     """
     Plot a single line chart showing the portfolio's overall performance over time.
 
@@ -791,13 +888,15 @@ def plot_portfolio_performance(portfolio_df, performance_col='Performance (%)'):
     fig = go.Figure()
 
     # Single line for portfolio performance
-    fig.add_trace(go.Scatter(
-        x=portfolio_df["Date"],
-        y=portfolio_df[performance_col],
-        mode='lines',
-        name="Portfolio Performance",
-        line=dict(color='blue', width=3)
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=portfolio_df["Date"],
+            y=portfolio_df[performance_col],
+            mode="lines",
+            name="Portfolio Performance",
+            line=dict(color=f"{BLUE}", width=3),
+        )
+    )
 
     fig.update_layout(
         title="Portfolio Overall Performance Over Time",
@@ -805,16 +904,17 @@ def plot_portfolio_performance(portfolio_df, performance_col='Performance (%)'):
         yaxis_title=performance_col,
         template="plotly_white",
         hovermode="x unified",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
 
     return fig
 
 
 def plot_single_performance(
-        x, y,
-        color='blue',
-        label="",
+    x,
+    y,
+    color=f"{BLUE}",
+    label="",
 ):
     """
     Generalized function to plot performance over time for:
@@ -831,13 +931,9 @@ def plot_single_performance(
     """
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(
-        x=x,
-        y=y,
-        mode='lines',
-        name=label,
-        line=dict(color=color, width=3)
-    ))
+    fig.add_trace(
+        go.Scatter(x=x, y=y, mode="lines", name=label, line=dict(color=color, width=3))
+    )
 
     # 3) Final layout settings
     # fig.update_layout(
@@ -853,14 +949,14 @@ def plot_single_performance(
 
 
 def plot_performance(
-        portfolio_df=None,
-        color='blue',
-        items=None,
-        date_col="Date",
-        perf_col="Performance",
-        portfolio_label="Portfolio",
-        item_labels=None,
-        title="Performance Over Time"
+    portfolio_df=None,
+    color=f"{BLUE}",
+    items=None,
+    date_col="Date",
+    perf_col="Performance",
+    portfolio_label="Portfolio",
+    item_labels=None,
+    title="Performance Over Time",
 ):
     """
     Generalized function to plot performance over time for:
@@ -880,14 +976,18 @@ def plot_performance(
     # 1) Add the portfolio line, if provided
     if portfolio_df is not None:
         if date_col not in portfolio_df.columns or perf_col not in portfolio_df.columns:
-            raise ValueError(f"Portfolio DataFrame must contain '{date_col}' and '{perf_col}' columns.")
-        fig.add_trace(go.Scatter(
-            x=portfolio_df[date_col],
-            y=portfolio_df[perf_col],
-            mode='lines',
-            name=portfolio_label,
-            line=dict(color=color, width=3)
-        ))
+            raise ValueError(
+                f"Portfolio DataFrame must contain '{date_col}' and '{perf_col}' columns."
+            )
+        fig.add_trace(
+            go.Scatter(
+                x=portfolio_df[date_col],
+                y=portfolio_df[perf_col],
+                mode="lines",
+                name=portfolio_label,
+                line=dict(color=color, width=3),
+            )
+        )
 
     # 2) Handle multiple items (e.g., tickers or benchmarks)
     if items is not None:
@@ -906,16 +1006,20 @@ def plot_performance(
             color = color_cycle[i % len(color_cycle)]
 
             if date_col not in df_item.columns or perf_col not in df_item.columns:
-                print(f"Skipping {symbol}: missing '{date_col}' or '{perf_col}' in DataFrame.")
+                print(
+                    f"Skipping {symbol}: missing '{date_col}' or '{perf_col}' in DataFrame."
+                )
                 continue
 
-            fig.add_trace(go.Scatter(
-                x=df_item[date_col],
-                y=df_item[perf_col],
-                mode='lines',
-                name=label,
-                line=dict(color=color, width=2)
-            ))
+            fig.add_trace(
+                go.Scatter(
+                    x=df_item[date_col],
+                    y=df_item[perf_col],
+                    mode="lines",
+                    name=label,
+                    line=dict(color=color, width=2),
+                )
+            )
 
     # 3) Final layout settings
     fig.update_layout(
@@ -924,16 +1028,18 @@ def plot_performance(
         yaxis_title=perf_col,
         template="plotly_white",
         hovermode="x unified",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
 
     return fig
 
 
-def plot_tickers_performance(all_tickers_perf,
-                             date_col='Date',
-                             perf_col='Performance',
-                             title="Tickers Performance Over Time"):
+def plot_tickers_performance(
+    all_tickers_perf,
+    date_col="Date",
+    perf_col="Performance",
+    title="Tickers Performance Over Time",
+):
     """
     Plot multiple ticker performance lines on one figure (one line per ticker).
 
@@ -948,15 +1054,19 @@ def plot_tickers_performance(all_tickers_perf,
     for symbol, df_ticker in all_tickers_perf.items():
         # Validate columns
         if date_col not in df_ticker.columns or perf_col not in df_ticker.columns:
-            print(f"Skipping {symbol}: missing '{date_col}' or '{perf_col}' in DataFrame.")
+            print(
+                f"Skipping {symbol}: missing '{date_col}' or '{perf_col}' in DataFrame."
+            )
             continue
 
-        fig.add_trace(go.Scatter(
-            x=df_ticker[date_col],
-            y=df_ticker[perf_col],
-            mode='lines',
-            name=symbol  # Legend label is the ticker
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=df_ticker[date_col],
+                y=df_ticker[perf_col],
+                mode="lines",
+                name=symbol,  # Legend label is the ticker
+            )
+        )
 
     fig.update_layout(
         title=title,
@@ -964,7 +1074,7 @@ def plot_tickers_performance(all_tickers_perf,
         yaxis_title=perf_col,
         template="plotly_white",
         hovermode="x unified",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
 
     return fig
@@ -975,8 +1085,12 @@ def plot_absolute_cumulative_return(portfolio_df):
     Plots the absolute cumulative return (in currency) as a line chart.
     Assumes portfolio_df has a 'Cumulative Return (Abs)' column.
     """
-    fig = px.line(portfolio_df, x="Date", y="Cumulative Return (Abs)",
-                  title="Absolute Cumulative Return Over Time")
+    fig = px.line(
+        portfolio_df,
+        x="Date",
+        y="Cumulative Return (Abs)",
+        title="Absolute Cumulative Return Over Time",
+    )
     fig.update_layout(template="plotly_white", hovermode="x unified")
     return fig
 
@@ -987,37 +1101,48 @@ def plot_top_holdings_concentration(allocation_df, top_n=5):
     Assumes allocation_df has ['Ticker', 'Market Value'].
     """
     df = allocation_df.sort_values("Market Value", ascending=False).head(top_n)
-    fig = px.bar(df, x='Ticker', y='Market Value',
-                 title=f"Top {top_n} Holdings by Market Value",
-                 color='Ticker',
-                 text='Market Value')
-    fig.update_traces(textposition='outside')
-    fig.update_layout(template='plotly_white', hovermode='x unified', showlegend=False)
+    fig = px.bar(
+        df,
+        x="Ticker",
+        y="Market Value",
+        title=f"Top {top_n} Holdings by Market Value",
+        color="Ticker",
+        text="Market Value",
+    )
+    fig.update_traces(textposition="outside")
+    fig.update_layout(template="plotly_white", hovermode="x unified", showlegend=False)
     return fig
 
 
-def plot_asset_allocation_by_type(allocation_df, type_col='AssetType'):
+def plot_asset_allocation_by_type(allocation_df, type_col="AssetType"):
     """
     Create a pie chart of asset allocation by the specified 'type_col' (e.g., AssetType, Sector, etc.).
     Expects allocation_df to have columns [type_col, 'MarketValue'].
     """
     # Summarize by asset type
-    df_type = allocation_df.groupby(type_col)['MarketValue'].sum().reset_index()
+    df_type = allocation_df.groupby(type_col)["MarketValue"].sum().reset_index()
 
     # Create pie chart
-    fig = px.pie(df_type, names=type_col, values='MarketValue',
-                 )
+    fig = px.pie(
+        df_type,
+        names=type_col,
+        values="MarketValue",
+    )
 
     fig.update_traces(
-        textposition='inside',
-        textinfo='percent+label',
-        insidetextfont=dict(size=14, color='white'),  # Increase font size and ensure good contrast
-        outsidetextfont=dict(size=12, color='black'),
-        marker=dict(line=dict(color='white', width=2))  # Add white border around slices
+        textposition="inside",
+        textinfo="percent+label",
+        insidetextfont=dict(
+            size=14, color="white"
+        ),  # Increase font size and ensure good contrast
+        outsidetextfont=dict(size=12, color=f"{BLACK}"),
+        marker=dict(
+            line=dict(color="white", width=2)
+        ),  # Add white border around slices
     )
 
     fig.update_layout(
-        template='plotly_white',
+        template="plotly_white",
         autosize=True,
         margin=dict(l=40, r=40, t=60, b=80),  # Adjust margins for better layout
         width=600,  # Set fixed width
@@ -1029,14 +1154,15 @@ def plot_asset_allocation_by_type(allocation_df, type_col='AssetType'):
         # ),
         legend=dict(
             font=dict(size=14),
-            title=dict(text=f"{type_col}s", font=dict(size=16)),  # Legend title for better context
+            title=dict(
+                text=f"{type_col}s", font=dict(size=16)
+            ),  # Legend title for better context
             orientation="h",  # Horizontal legend
             yanchor="top",  # Anchor legend at the bottom
             y=0,  # Position legend below the chart
             xanchor="center",  # Center the legend horizontally
             x=0.5,  # Adjust horizontal position
-        )
+        ),
     )
 
     return fig
-

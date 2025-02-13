@@ -233,7 +233,7 @@ Here are two example of portfolio optimization for **all** securities and for **
 
 3. Generate the static html
 
-          python3 portfolio_analysis/main.py -d tickers_test.json -t transactions_test.json -u -o outputs/portfolio_analysis.html
+          python3 portfolio_analysis/0_Home.py -d tickers_test.json -t transactions_test.json -u -o outputs/portfolio_analysis.html
     [-u --> update historical data]
 
 
