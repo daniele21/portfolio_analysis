@@ -144,6 +144,14 @@ def configure_page():
             border-bottom: 1px solid #93C5FD;
         }
 
+        .stAppHeader,
+        .stAppToolbar,
+        ._container_gzau3_1 _viewerBadge_nim44_23,
+        ._link_gzau3_10,
+        ._profileContainer_gzau3_53 {
+            display: none !important
+        }
+
         </style>
     """,
         unsafe_allow_html=True,
