@@ -205,7 +205,7 @@ def _asset_performance(
     selected_benchmark_ticker,
     all_tickers_perf,
 ):
-    selected_ticker = st.multiselect("Select Ticker:", tickers, default=tickers[0])
+    selected_ticker = st.multiselect("Select Ticker:", tickers, default=tickers)
     ticker_data_dict = {ticker: all_tickers_perf[ticker] for ticker in selected_ticker}
     titles = [value["title"].iloc[0] for _, value in ticker_data_dict.items()]
     # st.write(data_dict['EVISO.MI'])
