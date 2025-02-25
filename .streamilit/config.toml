@@ -1,0 +1,6 @@
+[theme]
+primaryColor = "#ff5722"          # Green (professional touch)
+backgroundColor = "#f3f4f6"
+secondaryBackgroundColor = "#ffffff"
+textColor = "#374151"         # Light text for dark theme
+font = "sans serif"
